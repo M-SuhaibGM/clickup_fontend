@@ -1,144 +1,339 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Here is a complete, professional README that covers what you built, how to set it up, and how to deploy it. Copy this into `README.md` at the **root** of your project (not inside `backend/` or `frontend/`).
 
-## Getting Started
+```markdown
+# 🚀 ClickUp Clone
 
-First, run the development server:
+A **full-stack, multi-tenant project management app** built with Next.js, Express, PostgreSQL, and Socket.io. Inspired by ClickUp — includes workspaces, projects, lists, tasks, Kanban boards, real-time collaboration, file attachments, email notifications, and a complete audit log.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+![Banner](https://img.shields.io/badge/Stack-Next.js%20%7C%20Express%20%7C%20Prisma%20%7C%20PostgreSQL-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+
+---
+
+## 🌐 Live Demo
+
+- **Frontend**: [clickup-clone.vercel.app](https://clickup-clone.vercel.app) *(replace with your live URL)*
+- **Backend API**: [clickup-backend.onrender.com](https://clickup-backend.onrender.com) *(replace with your live URL)*
+
+> ⚠️ Render free tier sleeps after 15 min of inactivity — first request may take ~30 seconds to wake up.
+
+---
+
+## ✨ Features
+
+### 🔐 Authentication
+- Google OAuth 2.0 login via Passport.js
+- JWT access + refresh token rotation
+- HttpOnly refresh cookie with automatic silent refresh
+- Session persistence across page reloads
+
+### 🏢 Multi-Tenant Workspaces
+- Create and switch between multiple workspaces
+- Invite team members by email (instant add — no invite link needed)
+- Role-based access control: **Admin** vs **Member**
+- Admin-only: create projects, lists, tasks; delete members; edit roles
+
+### 📁 Projects & Lists
+- Create projects with custom colors and descriptions
+- Add multiple lists inside each project (Kanban columns)
+- Drag-and-drop reordering for lists and tasks
+- Project settings modal (edit name, description, delete)
+
+### ✅ Tasks
+- Full task management: title, description, status, priority, due date, assignee
+- **Subtasks** with progress tracking
+- **Comments** with edit/delete and real-time updates
+- **File attachments** via UploadThing
+- Full task detail page (`/tasks/[id]`)
+- Drag-and-drop between Kanban columns (status change)
+- Assign tasks to any workspace member → email notification
+
+### 📊 Views
+- **List View** — compact table with all task details
+- **Kanban Board View** — drag-and-drop columns (To Do, In Progress, Done)
+- **My Tasks** — personal dashboard with pending task count badge
+- **Activity History** — admin-only audit log of all workspace events
+
+### ⚡ Real-Time Collaboration
+- Socket.io with JWT authentication
+- Live updates across browser windows (task create/update/delete)
+- Instant workspace activity broadcasting
+- Real-time pending task count in sidebar
+
+### 📧 Notifications
+- Welcome email on signup (via Resend)
+- Task assignment email (only on assignee change)
+- Workspace addition email
+- Beautiful HTML templates
+
+### 🎨 UX & Polish
+- **Dark mode** with system detection
+- **Command Palette** (`⌘K` / `Ctrl+K`) for global search
+- Custom **404 page**
+- Skeleton loaders on every data fetch
+- Toast notifications via Sonner
+- Responsive design (mobile → desktop)
+- Hierarchical sidebar with collapsible workspaces → projects → lists
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend
+| Tech | Purpose |
+|---|---|
+| **Next.js 15 (App Router)** | React framework with SSR |
+| **TypeScript** | Type safety |
+| **Tailwind CSS** | Styling |
+| **Shadcn UI** | Component library |
+| **Zustand** | Global state management |
+| **Axios** | HTTP client with interceptors |
+| **Socket.io Client** | Real-time WebSocket |
+| **@dnd-kit** | Drag-and-drop |
+| **Sonner** | Toast notifications |
+| **next-themes** | Dark mode |
+| **UploadThing** | File uploads |
+| **Lucide React** | Icons |
+
+### Backend
+| Tech | Purpose |
+|---|---|
+| **Node.js + Express 5** | REST API |
+| **TypeScript** | Type safety |
+| **Prisma 7** | ORM |
+| **PostgreSQL (Neon)** | Database |
+| **Passport.js** | Google OAuth |
+| **JWT** | Auth tokens |
+| **Socket.io** | Real-time server |
+| **Resend** | Transactional email |
+| **UploadThing** | File upload backend |
+| **Morgan** | Request logging |
+
+---
+
+## 📂 Project Structure
+
+```
+clickup-clone/
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma          # DB schema
+│   │   └── migrations/            # Migration history
+│   ├── src/
+│   │   ├── config/                # env, passport, socket
+│   │   ├── controllers/           # Route handlers
+│   │   ├── middleware/            # auth, error handling
+│   │   ├── models/                # Prisma model wrappers
+│   │   ├── routes/                # Express routes
+│   │   ├── services/              # Business logic
+│   │   ├── utils/                 # asyncHandler, helpers
+│   │   ├── app.ts                 # Express app config
+│   │   └── server.ts              # HTTP + Socket.io server
+│   ├── prisma.config.ts           # Prisma 7 config
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend/
+│   ├── app/
+│   │   ├── (app)/                 # Authenticated routes
+│   │   │   ├── dashboard/         # Overview page
+│   │   │   ├── projects/[id]/     # Project detail
+│   │   │   ├── tasks/[id]/        # Task detail page
+│   │   │   ├── members/           # Team management
+│   │   │   ├── my-tasks/          # Personal tasks
+│   │   │   ├── history/           # Activity log
+│   │   │   └── settings/          # Workspace settings
+│   │   ├── login/                 # Auth page
+│   │   └── layout.tsx             # Root layout
+│   ├── components/                # Reusable UI
+│   ├── lib/                       # api, socket, auth
+│   ├── store/                     # Zustand stores
+│   ├── types/                     # TypeScript types
+│   └── next.config.ts
+│
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Getting Started (Local Development)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
+- **Node.js 20+**
+- **PostgreSQL** database (local or [Neon](https://neon.tech) free tier)
+- **Google OAuth credentials** from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+- **Resend API key** from [Resend](https://resend.com)
+- **UploadThing token** from [UploadThing](https://uploadthing.com)
 
-## Learn More
+### 1. Clone the repo
+```bash
+git clone https://github.com/M-SuhaibGM/clickup_backend.git
+cd clickup_backend
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Backend setup
+```bash
+cd backend
+npm install
+cp .env.example .env   # Then fill in your values
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**`backend/.env`**:
+```env
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
 
-## Deploy on Vercel
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+SESSION_SECRET=random-string
+ACCESS_TOKEN_SECRET=random-string
+REFRESH_TOKEN_SECRET=random-string
+ACCESS_TOKEN_EXPIRES=15m
+REFRESH_TOKEN_EXPIRES=7d
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+RESEND_API_KEY=re_your_key
+UPLOADTHING_TOKEN=sk_live_your_token
+```
 
+Run migrations and start:
+```bash
+npx prisma migrate deploy
+npx prisma generate
+npm run dev
+```
+Backend runs on **http://localhost:5000**.
 
+### 3. Frontend setup
+```bash
+cd ../frontend
+npm install
+```
 
+**`frontend/.env.local`**:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_AUTH_URL=http://localhost:5000/api/auth
+```
 
-You want to go beyond the basics before deploying. That's a great instinct—it shows you want to build something genuinely impressive, not just functional.
+Start the dev server:
+```bash
+npm run dev
+```
+Frontend runs on **http://localhost:3000**.
 
-Looking at what real ClickUp offers and what would elevate your clone from "good intern project" to "standout portfolio piece," here are the advanced features worth building, ranked by impact vs. effort.
+### 4. Google OAuth setup
+In [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+- **Authorized JavaScript origins**: `http://localhost:3000`
+- **Authorized redirect URIs**: `http://localhost:5000/api/auth/google/callback`
 
 ---
 
-### 🥇 Tier 1: High Impact, Moderate Effort
+## 🐳 Docker (Optional)
 
-These are the features that make the app feel "alive" and collaborative.
+To run the backend in Docker locally:
 
-#### 1. Real-Time Collaboration (Socket.io)
-**What it does:** When you or another user moves a task on the Kanban board, adds a comment, or edits a task, everyone else sees the change instantly without refreshing.
-**Why it matters:** This is the single biggest "wow" factor. It transforms your app from a static CRUD app into a live workspace.
-**How to build it:**
-- Install `socket.io` on the backend and `socket.io-client` on the frontend .
-- Emit events from your Express controllers (e.g., `io.to(projectId).emit('task:moved', task)`).
-- In your React components, listen for events and update the Zustand store.
-- This is exactly what ClickUp does for real-time updates .
+```bash
+cd backend
+docker build -t clickup-backend .
+docker run -p 5000:5000 --env-file .env clickup-backend
+```
 
-#### 2. File Attachments (Cloudinary)
-**What it does:** Users can attach images, PDFs, or any file to a task. ClickUp has extensive file and media support .
-**Why it matters:** Tasks often need context—a screenshot, a spec document, a design mockup.
-**How to build it:**
-- Use `multer` and `multer-storage-cloudinary` on the backend .
-- Add an "Attachments" section in your `TaskDetailDrawer`.
-- Upload files to Cloudinary and store the URL in your database.
-
-#### 3. Email Notifications (Nodemailer)
-**What it does:** When a task is assigned to someone, or someone comments on their task, they get an email.
-**Why it matters:** ClickUp has built-in email notifications and reminders . It makes the app feel like a real product.
-**How to build it:**
-- Install `nodemailer` on the backend .
-- Create a simple transporter (use Gmail with an app-specific password for dev).
-- Trigger emails from your controllers (e.g., after `assignTask` or `createComment`).
+The `Dockerfile` uses Node 22 Alpine with OpenSSL for Prisma. It runs `prisma migrate deploy` automatically on startup.
 
 ---
 
-### 🥈 Tier 2: Advanced Project Management Features
+## ☁️ Deployment
 
-These are the features that make ClickUp powerful for teams.
+### Database — Neon
+1. Create a project at [neon.tech](https://neon.tech)
+2. Copy the connection string (ends with `?sslmode=require`)
+3. Run migrations: `npx prisma migrate deploy`
 
-#### 4. Custom Statuses
-**What it does:** Instead of just `TODO`, `IN_PROGRESS`, `DONE`, users can define their own statuses (e.g., "In Review", "Blocked", "QA").
-**Why it matters:** ClickUp's flexibility with custom statuses is a core selling point .
-**How to build it:**
-- Add a `Status` model in Prisma (belongs to a `List` or `Project`).
-- Allow users to create/edit statuses per project.
-- Update your Kanban board to render columns dynamically based on the list's statuses.
+### Backend — Render
+1. Create **New Web Service** → connect GitHub repo
+2. **Root Directory**: `backend`
+3. **Runtime**: Node
+4. **Build Command**: `npm install && npx prisma generate && npm run build`
+5. **Start Command**: `npm start`
+6. **Environment Variables**: Copy all from `backend/.env`, updating:
+   - `NODE_ENV=production`
+   - `FRONTEND_URL=https://your-frontend.vercel.app`
+   - `GOOGLE_CALLBACK_URL=https://your-backend.onrender.com/api/auth/google/callback`
 
-#### 5. Task Dependencies
-**What it does:** Mark a task as "blocking" or "waiting on" another task. If Task A is blocked by Task B, Task A cannot be marked "Done" until Task B is complete.
-**Why it matters:** This is a signature ClickUp feature for managing workflows .
-**How to build it:**
-- Add a `dependencies` relation in Prisma (many-to-many self-relation on `Task`).
-- In the UI, add a "Dependencies" section in the task drawer.
-- Enforce the rule in the backend: if a task has incomplete blockers, reject the status change to `DONE`.
+### Frontend — Vercel
+1. Create **New Project** → connect GitHub repo
+2. **Root Directory**: `frontend`
+3. **Environment Variables**:
+   ```
+   NEXT_PUBLIC_API_URL=https://your-backend.onrender.com/api
+   NEXT_PUBLIC_AUTH_URL=https://your-backend.onrender.com/api/auth
+   ```
+4. Deploy
 
-#### 6. Multiple Assignees
-**What it does:** Assign more than one person to a task.
-**Why it matters:** ClickUp supports multiple assignees as a feature .
-**How to build it:**
-- Change `assigneeId` (single) to a many-to-many relation (`assignees: User[]`).
-- Update the dropdown to allow multi-select.
-- Update the task card/row to show multiple avatars.
-
----
-
-### 🥉 Tier 3: "Wow" Polish Features
-
-#### 7. Calendar View
-**What it does:** A third view mode (alongside List and Board) that shows tasks on a calendar based on their due dates.
-**Why it matters:** ClickUp users love switching between List, Board, and Calendar views .
-**How to build it:**
-- Use a library like `react-big-calendar` or `@fullcalendar/react`.
-- Add a toggle button next to List/Board.
-- Feed it tasks from your store.
-
-#### 8. Tags
-**What it does:** Colorful labels that can be applied to tasks for filtering and organization.
-**Why it matters:** ClickUp has a full tag manager .
-**How to build it:**
-- Add a `Tag` model and a many-to-many relation with `Task`.
-- In the task drawer, allow adding/removing tags.
-- In the List/Board view, show tags as small colored pills on task cards.
-
-#### 9. Activity Log
-**What it does:** A timeline inside each task showing who did what and when (e.g., "Ali changed status to In Progress", "Sara added a comment").
-**Why it matters:** It provides context and accountability, just like ClickUp's activity feed.
-**How to build it:**
-- Create an `Activity` model in Prisma (`taskId`, `userId`, `action`, `metadata`, `createdAt`).
-- Log events from your controllers (status change, assignee change, comment added).
-- Display the feed in the task drawer.
+### Final Step — Google OAuth
+Update Google Console:
+- **Authorized JavaScript origins**: `https://your-frontend.vercel.app`
+- **Authorized redirect URIs**: `https://your-backend.onrender.com/api/auth/google/callback`
 
 ---
 
-### 💡 My Recommendation for Your Next Step
+## 🧪 Testing Checklist
 
-Given your momentum and skill level, I'd suggest building these in this order:
+- [ ] Sign in with Google
+- [ ] Create a workspace
+- [ ] Create a project → list → task
+- [ ] Assign task to a team member (email arrives)
+- [ ] Drag task between Kanban columns
+- [ ] Add a comment, subtask, and attachment
+- [ ] Invite another email to workspace
+- [ ] Switch between workspaces
+- [ ] Press `⌘K` to open Command Palette
+- [ ] Toggle dark mode
+- [ ] Check Activity History (admin only)
+- [ ] Test real-time: two browser windows, drag task in one → updates in other
 
-1.  **Real-Time Updates with Socket.io** — It's the most impressive and directly addresses the "feels static" problem.
-2.  **File Attachments** — Practical and visually satisfying.
-3.  **Custom Statuses** — Unlocks the true flexibility of ClickUp.
+---
 
-**Which one excites you the most?** Tell me which feature you want to tackle, and I'll give you the step-by-step implementation (backend + frontend), just like we've been doing.
+## 🔒 Security Features
+
+- ✅ HttpOnly refresh cookies (XSS safe)
+- ✅ JWT access token rotation
+- ✅ Role-based access control enforced on backend
+- ✅ SQL injection protected via Prisma
+- ✅ CORS with credentials
+- ✅ Environment variables never committed
+- ✅ Google OAuth with state verification
+
+---
+
+## 🐛 Known Limitations
+
+- **Render free tier**: Cold starts (~30s) after 15 min inactivity
+- **Resend free tier**: Can only send to verified addresses until domain verified
+- **UploadThing free tier**: 2GB storage limit
+- **No rate limiting** (add `express-rate-limit` for production use)
+- **No test suite** (add Jest/Vitest for production)
+
+---
+
+## 📝 License
+
+MIT License — feel free to fork, extend, or use commercially.
+
+---
+
+## 🙌 Acknowledgments
+
+- [ClickUp](https://clickup.com) for the design inspiration
+- [Shadcn UI](https://ui.shadcn.com) for the component primitives
+- [Vercel](https://vercel.com), [Render](https://render.com), and [Neon](https://neon.tech) for free hosting
+
+---
+
+**Built with ❤️ by [Muhammad Suhaib](https://github.com/M-SuhaibGM)**
