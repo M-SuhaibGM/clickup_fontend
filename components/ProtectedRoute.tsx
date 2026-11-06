@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { fetchCurrentUser } from '@/lib/auth';
-import ProjectDetailSkeleton from './ProjectDetailSkeleton';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -27,8 +26,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">e
-        <ProjectDetailSkeleton/>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

@@ -1,7 +1,9 @@
+// frontend/store/taskStore.ts
 import { create } from 'zustand';
 import { api } from '@/lib/api';
 import type { Task } from '@/types/task';
 import { useListStore } from './listStore';
+import { toast } from 'sonner'; // ← Import toast
 
 interface TaskState {
   tasksByList: Record<string, Task[]>;
@@ -12,12 +14,9 @@ interface TaskState {
   updateTask: (taskId: string, listId: string, patch: Partial<Task>) => Promise<Task>;
   deleteTask: (taskId: string, listId: string) => Promise<void>;
   reorderTasks: (listId: string, newTasks: Task[]) => Promise<void>;
-
-  setTasks: (listId: string, tasks: Task[]) => void; // ← ADD THIS
-
+  setTasks: (listId: string, tasks: Task[]) => void;
   clear: () => void;
 }
-
 
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasksByList: {},
@@ -30,29 +29,38 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set((s) => ({
         tasksByList: { ...s.tasksByList, [listId]: data.tasks },
       }));
+    } catch (err: any) {
+      console.error('Failed to fetch tasks', err);
+      // Silent fail — loading state will handle the UI
+      if (err?.response?.status !== 401) {
+        toast.error('Failed to load tasks');
+      }
     } finally {
       set((s) => ({ loadingLists: { ...s.loadingLists, [listId]: false } }));
     }
   },
 
   createTask: async (listId, input) => {
-    const { data } = await api.post<{ task: Task }>(`/lists/${listId}/tasks`, input);
+    try {
+      const { data } = await api.post<{ task: Task }>(`/lists/${listId}/tasks`, input);
 
-    // Update tasks
-    set((s) => ({
-      tasksByList: {
-        ...s.tasksByList,
-        [listId]: [data.task, ...(s.tasksByList[listId] ?? [])],
-      },
-    }));
+      const currentTasks = get().tasksByList[listId] ?? [];
+      
+      // Check if it's already there (from the socket)
+      if (!currentTasks.some((t) => t.id === data.task.id)) {
+        get().setTasks(listId, [data.task, ...currentTasks]);
+      }
 
-    // Update the list count in the sidebar
-    useListStore.getState().incrementTaskCount(listId, 1); // ← ADD THIS
+      // Update the list count in the sidebar
+      useListStore.getState().incrementTaskCount(listId, 1);
+      toast.success('Task created');
 
-    return data.task;
+      return data.task;
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to create task');
+      throw err;
+    }
   },
-
-
 
   reorderTasks: async (listId, newTasks) => {
     // Optimistic update
@@ -66,46 +74,62 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     try {
       const taskIds = newTasks.map((t) => t.id);
       await api.patch('/tasks/reorder', { taskIds });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save task order', err);
+      toast.error('Failed to save task order');
     }
   },
 
   updateTask: async (taskId, listId, patch) => {
-    const { data } = await api.patch<{ task: Task }>(`/tasks/${taskId}`, patch);
-    set((s) => ({
-      tasksByList: {
-        ...s.tasksByList,
-        [listId]: (s.tasksByList[listId] ?? []).map((t) =>
-          t.id === taskId ? data.task : t
-        ),
-      },
-    }));
-    return data.task;
+    try {
+      const { data } = await api.patch<{ task: Task }>(`/tasks/${taskId}`, patch);
+      set((s) => ({
+        tasksByList: {
+          ...s.tasksByList,
+          [listId]: (s.tasksByList[listId] ?? []).map((t) =>
+            t.id === taskId ? data.task : t
+          ),
+        },
+      }));
+      // toast.success('Task updated');
+      return data.task;
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to update task');
+      throw err;
+    }
   },
 
   deleteTask: async (taskId, listId) => {
-    await api.delete(`/tasks/${taskId}`);
+    try {
+      await api.delete(`/tasks/${taskId}`);
 
-    // Update tasks
-    set((s) => ({
-      tasksByList: {
-        ...s.tasksByList,
-        [listId]: (s.tasksByList[listId] ?? []).filter((t) => t.id !== taskId),
-      },
-    }));
+      set((s) => ({
+        tasksByList: {
+          ...s.tasksByList,
+          [listId]: (s.tasksByList[listId] ?? []).filter((t) => t.id !== taskId),
+        },
+      }));
 
-    // Update the list count in the sidebar
-    useListStore.getState().incrementTaskCount(listId, -1); // ← ADD THIS
+      useListStore.getState().incrementTaskCount(listId, -1);
+      toast.success('Task deleted');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to delete task');
+      throw err;
+    }
   },
-  // ← ADD THIS IMPLEMENTATION
+
   setTasks: (listId, tasks) => {
-    set((s) => ({
-      tasksByList: {
-        ...s.tasksByList,
-        [listId]: tasks,
-      },
-    }));
+    set((s) => {
+      const uniqueTasks = Array.from(
+        new Map(tasks.map((t) => [t.id, t])).values()
+      );
+      return {
+        tasksByList: {
+          ...s.tasksByList,
+          [listId]: uniqueTasks,
+        },
+      };
+    });
   },
 
   clear: () => set({ tasksByList: {}, loadingLists: {} }),

@@ -19,7 +19,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 
 const COLUMNS = [
-    { id: 'TODO', label: 'To Do', color: 'bg-gray-400' },
+    { id: 'TODO', label: 'To Do', color: 'bg-muted-foreground/40' },
     { id: 'IN_PROGRESS', label: 'In Progress', color: 'bg-amber-400' },
     { id: 'DONE', label: 'Done', color: 'bg-emerald-500' },
 ];
@@ -29,15 +29,16 @@ const EMPTY_TASKS: never[] = [];
 export default function BoardView({
     listId,
     onTaskClick,
+    isAdmin, // ← ADD
 }: {
     listId: string;
     onTaskClick: (task: Task) => void;
+    isAdmin: boolean; // ← ADD
 }) {
     const tasks = useTaskStore((s) => s.tasksByList[listId] ?? EMPTY_TASKS);
     const fetchTasks = useTaskStore((s) => s.fetchTasks);
     const updateTask = useTaskStore((s) => s.updateTask);
     const setTasks = useTaskStore((s) => s.setTasks);
-
     const reorderTasks = useTaskStore((s) => s.reorderTasks);
 
     const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -51,10 +52,12 @@ export default function BoardView({
     }, [listId, fetchTasks, tasks.length]);
 
     const tasksByColumn = useMemo(() => {
+        const mainTasks = tasks.filter((t) => !t.parentId);
+
         return {
-            TODO: tasks.filter((t) => t.status === 'TODO'),
-            IN_PROGRESS: tasks.filter((t) => t.status === 'IN_PROGRESS'),
-            DONE: tasks.filter((t) => t.status === 'DONE'),
+            TODO: mainTasks.filter((t) => t.status === 'TODO'),
+            IN_PROGRESS: mainTasks.filter((t) => t.status === 'IN_PROGRESS'),
+            DONE: mainTasks.filter((t) => t.status === 'DONE'),
         };
     }, [tasks]);
 
@@ -74,56 +77,51 @@ export default function BoardView({
         const activeTask = tasks.find((t) => t.id === taskId);
         if (!activeTask) return;
 
-        // 1. Determine the new status
-        let newStatus = activeTask.status;
+        // Filter out subtasks for reordering logic
+        const mainTasks = tasks.filter((t) => !t.parentId);
 
-        // If dropped directly on a column (e.g., empty "Done" column)
+        let newStatus = activeTask.status;
         if (COLUMNS.some((c) => c.id === overId)) {
             newStatus = overId as any;
         } else {
-            // If dropped on another task, use THAT task's status
             const overTask = tasks.find((t) => t.id === overId);
             if (overTask) newStatus = overTask.status;
         }
 
-        // 2. Reorder logic (if dropping within the same column)
-        const oldIndex = tasks.findIndex((t) => t.id === taskId);
-        const newIndex = tasks.findIndex((t) => t.id === overId);
+        const oldIndex = mainTasks.findIndex((t) => t.id === taskId);
+        const newIndex = mainTasks.findIndex((t) => t.id === overId);
 
         // Optimistic UI Update
         if (oldIndex !== -1 && newIndex !== -1 && newStatus === activeTask.status) {
-            // Reordering within same column
-            setTasks(listId, arrayMove(tasks, oldIndex, newIndex));
+            // Reordering within the same column requires Admin permissions
+            if (!isAdmin) {
+                toast.error('Only admins can reorder tasks within a column');
+                return;
+            }
+            const newTasks = arrayMove(mainTasks, oldIndex, newIndex);
+            const subtasks = tasks.filter((t) => t.parentId);
+            setTasks(listId, [...newTasks, ...subtasks]);
         } else if (newStatus !== activeTask.status) {
-            // Moving to a new column
+            // Moving to a new column (status change) — allowed for all members
             const updatedTasks = tasks.map((t) =>
                 t.id === taskId ? { ...t, status: newStatus } : t
             );
             setTasks(listId, updatedTasks);
         }
 
-        // 3. API Call
+        // API Call
         if (newStatus !== activeTask.status) {
             try {
                 await updateTask(taskId, listId, { status: newStatus });
                 toast.success(`Moved to ${COLUMNS.find((c) => c.id === newStatus)?.label}`);
             } catch {
                 toast.error('Failed to move task');
-                fetchTasks(listId); // Revert by re-fetching
+                fetchTasks(listId);
             }
-        }
-        if (oldIndex !== -1 && newIndex !== -1 && newStatus === activeTask.status) {
-            // Reordering within same column
-            const newTasks = arrayMove(tasks, oldIndex, newIndex);
-            reorderTasks(listId, newTasks);
-        } else if (newStatus !== activeTask.status) {
-            // Moving to a new column
-            const updatedTasks = tasks.map((t) =>
-                t.id === taskId ? { ...t, status: newStatus } : t
-            );
-            setTasks(listId, updatedTasks);
-            // Note: If you want to persist the new order when moving columns, 
-            // you would also call reorderTasks(listId, updatedTasks) here.
+        } else if (oldIndex !== -1 && newIndex !== -1 && isAdmin) {
+            const newTasks = arrayMove(mainTasks, oldIndex, newIndex);
+            const subtasks = tasks.filter((t) => t.parentId);
+            reorderTasks(listId, [...newTasks, ...subtasks]);
         }
     };
 

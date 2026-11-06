@@ -1,125 +1,627 @@
+// components/Sidebar.tsx
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useProjectStore } from '@/store/projectStore';
-import { useState } from 'react';
+import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useAuthStore } from '@/store/authStore';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  ChevronDown,
+  Check,
+  Plus,
+  Users,
+  Search,
+  X,
+  ChevronRight,
+  LogOut,
+  List as ListIcon,
+  Workflow,
+  User as UserIcon,
+  CheckSquare,
+  Settings,
+  History,
+} from 'lucide-react';
 import NewProjectModal from './NewProjectModal';
+import InviteMemberModal from './InviteMemberModal';
+import NewWorkspaceModal from './Newworkspacemodal';
+import { api } from '@/lib/api';
+
+// ───────── DEBUG: set to false to silence all [Sidebar] logs ─────────
+const DEBUG = false;
+const dbg = (...args: any[]) => {
+  if (DEBUG) console.log('%c[Sidebar]', 'color:#6366f1;font-weight:bold', ...args);
+};
+
+// Shared tree row styles
+const treeRow =
+  'flex items-center gap-2 px-2.5 py-1.5 text-[13px] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50';
+const treeRowIdle = 'text-muted-foreground hover:bg-muted hover:text-foreground';
+const treeRowActive =
+  'bg-indigo-50 text-indigo-700 font-semibold dark:bg-indigo-500/10 dark:text-indigo-300';
+
+function RoleBadge({ owner }: { owner: boolean }) {
+  return (
+    <span
+      className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none ${owner
+        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
+        : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+        }`}
+    >
+      {owner ? 'Owner' : 'Shared'}
+    </span>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
   const projects = useProjectStore((s) => s.projects);
-  const loading = useProjectStore((s) => s.loading);
+  const listsByProject = useProjectStore((s) => s.listsByProject);
+  const fetchProjectLists = useProjectStore((s) => s.fetchProjectLists);
+  const user = useAuthStore((s) => s.user);
+
   const [modalOpen, setModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  // Track expansion states
+  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({});
+  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
+
+  // The one owned workspace currently shown in the tree (picked from the top dropdown)
+  const [selectedOwnedId, setSelectedOwnedId] = useState<string | null>(null);
+
+  // My role (ADMIN | MEMBER) in the active workspace, from WorkspaceMember (used for admin-only actions)
+  const [roleByWorkspace, setRoleByWorkspace] = useState<Record<string, string>>({});
+
+  const {
+    workspaces,
+    activeWorkspace,
+    setActiveWorkspace,
+    createWorkspace,
+    pendingTaskCount,           // ← ADD
+    fetchPendingTaskCount       // ← ADD
+  } = useWorkspaceStore();
+
+  const workspaceMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Owned = I'm the workspace's owner (Workspace.ownerId). Everything else I belong to is shared.
+  const isOwner = (ws: any) => !!ws && !!user && ws.ownerId === user.id;
+
+  // Admin-only actions (invite) depend on my membership role in the active workspace
+  const isAdmin = !!activeWorkspace && roleByWorkspace[activeWorkspace.id] === 'ADMIN';
+
+  const ownedWorkspaces = useMemo(
+    () => workspaces.filter((w: any) => !!user && w.ownerId === user.id),
+    [workspaces, user]
+  );
+  const sharedWorkspaces = useMemo(
+    () => workspaces.filter((w: any) => !user || w.ownerId !== user.id),
+    [workspaces, user]
+  );
+
+  const selectedOwned =
+    ownedWorkspaces.find((w) => w.id === selectedOwnedId) ??
+    (activeWorkspace && isOwner(activeWorkspace) ? activeWorkspace : ownedWorkspaces[0]);
+
+  // Tree shows: the one selected owned workspace + every shared workspace
+  const treeWorkspaces = [...(selectedOwned ? [selectedOwned] : []), ...sharedWorkspaces];
+
+  // Keep the selected owned workspace in sync, and auto-expand whatever becomes active
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    if (isOwner(activeWorkspace)) setSelectedOwnedId(activeWorkspace.id);
+    setExpandedWorkspaces((prev) => ({ ...prev, [activeWorkspace.id]: true }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWorkspace?.id, user?.id]);
+
+  // Load my membership role for the active workspace
+  useEffect(() => {
+    if (!user || !activeWorkspace) return;
+    const wsId = activeWorkspace.id;
+    let cancelled = false;
+    dbg('fetching role →', `GET /workspaces/${wsId}`);
+    api
+      .get<{ workspace: { members: any[] } }>(`/workspaces/${wsId}`)
+      .then(({ data }) => {
+        dbg('role response:', data);
+        const mine = data.workspace.members.find((m) => m.userId === user.id);
+        dbg('my membership:', mine ?? 'NOT FOUND (members[].userId never equals user.id)');
+        if (!cancelled) setRoleByWorkspace((prev) => ({ ...prev, [wsId]: mine?.role ?? 'MEMBER' }));
+      })
+      .catch((err) => console.error('[Sidebar] role request FAILED', err?.response?.status, err?.response?.data ?? err));
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWorkspace?.id, user?.id]);
+
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      fetchPendingTaskCount(activeWorkspace.id);
+    }
+  }, [activeWorkspace, fetchPendingTaskCount]);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (workspaceMenuRef.current && !workspaceMenuRef.current.contains(e.target as Node))
+        setWorkspaceMenuOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
+        setUserMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setWorkspaceMenuOpen(false);
+        setUserMenuOpen(false);
+      }
+      // ⌘K / Ctrl+K focuses the search box
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    }
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  const toggleProject = async (projectId: string) => {
+    const isExpanding = !expandedProjects[projectId];
+    setExpandedProjects((prev) => ({ ...prev, [projectId]: isExpanding }));
+
+    // Fetch lists if expanding for the first time
+    if (isExpanding && !listsByProject[projectId]) {
+      await fetchProjectLists(projectId);
+    }
+  };
+
+  // Select a workspace: make it active, and if it's an owned one, show it in the tree
+  const selectWorkspace = (ws: any) => {
+    dbg('selectWorkspace:', { id: ws.id, name: ws.name, ownerId: ws.ownerId, isOwner: isOwner(ws) });
+    setActiveWorkspace(ws);
+    if (isOwner(ws)) setSelectedOwnedId(ws.id);
+    setExpandedWorkspaces((prev) => ({ ...prev, [ws.id]: true }));
+  };
+
+  // Clicking a workspace header: activate it if needed, otherwise collapse/expand it
+  const handleWorkspaceClick = (ws: any) => {
+    dbg('workspace header clicked:', ws.name, '| currently active?', activeWorkspace?.id === ws.id);
+    if (activeWorkspace?.id !== ws.id) {
+      selectWorkspace(ws);
+    } else {
+      setExpandedWorkspaces((prev) => ({ ...prev, [ws.id]: !prev[ws.id] }));
+    }
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'W';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const searchResults = trimmedQuery
+    ? workspaces.filter((w) => w.name.toLowerCase().includes(trimmedQuery))
+    : [];
+
+  useEffect(() => {
+    if (trimmedQuery) dbg(`search "${trimmedQuery}" →`, searchResults.map((w) => w.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trimmedQuery]);
+
+  const renderWorkspace = (ws: any) => {
+    const owner = isOwner(ws);
+    const canManage = owner || isAdmin; // owner, or ADMIN member of the active workspace
+    const isWsExpanded = !!expandedWorkspaces[ws.id];
+    const isActiveWs = activeWorkspace?.id === ws.id;
+
+    return (
+      <div key={ws.id}>
+        {/* Workspace Header */}
+        <button
+          type="button"
+          aria-expanded={isWsExpanded}
+          onClick={() => handleWorkspaceClick(ws)}
+          className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${isActiveWs ? 'bg-indigo-50/60 dark:bg-indigo-950/20' : 'hover:bg-muted'
+            }`}
+        >
+          <ChevronRight
+            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isWsExpanded && isActiveWs ? 'rotate-90' : ''
+              }`}
+          />
+          <span
+            className={`text-sm font-semibold flex-1 truncate ${isActiveWs ? 'text-indigo-700 dark:text-indigo-300' : 'text-foreground'
+              }`}
+          >
+            {ws.name}
+          </span>
+          <RoleBadge owner={owner} />
+        </button>
+
+        {/* Expanded Workspace Contents (only the active workspace has loaded data) */}
+        {isWsExpanded && isActiveWs && (
+          <div className="ml-4 mt-1 mb-2 pl-3 space-y-0.5 border-l border-border/60">
+            <Link
+              href="/members"
+              className={`${treeRow} ${pathname === '/members' ? treeRowActive : treeRowIdle}`}
+            >
+              <UserIcon className="h-4 w-4 shrink-0" /> Members
+            </Link>
+            <button type="button" className={`${treeRow} ${treeRowIdle} w-full text-left`}>
+              <Workflow className="h-4 w-4 shrink-0" /> Workflows
+            </button>
+
+            <Link
+              href="/my-tasks"
+              className={`${treeRow} ${pathname === '/my-tasks' ? treeRowActive : treeRowIdle} justify-between`}
+            >
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4 shrink-0" /> My Tasks
+              </div>
+              {pendingTaskCount > 0 && (
+                <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-xs">
+                  {pendingTaskCount}
+                </span>
+              )}
+            </Link>
+            {canManage && (
+              <Link
+                href="/settings"
+                className={`${treeRow} ${pathname === '/settings' ? treeRowActive : treeRowIdle}`}
+              >
+                <Settings className="h-4 w-4 shrink-0" /> Settings
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                href="/history"
+                className={`${treeRow} ${pathname === '/history' ? treeRowActive : treeRowIdle}`}
+              >
+                <History className="h-4 w-4 shrink-0" /> History
+              </Link>
+            )}
+
+            {/* Projects inside Workspace */}
+            <div className="pt-3">
+              <div className="flex items-center justify-between px-2.5 mb-1 min-h-6">
+                <span className="text-[13px] font-medium text-muted-foreground">Projects</span>
+                {/* Only the workspace owner can add projects; shared workspaces are view-only here */}
+                {owner && (
+                  <button
+                    type="button"
+                    aria-label="New project"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setModalOpen(true);
+                    }}
+                    className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {projects.length === 0 && (
+                <p className="px-2.5 py-1.5 text-[13px] text-muted-foreground italic">
+                  No projects yet
+                </p>
+              )}
+
+              {projects.map((p) => {
+                const isProjExpanded = !!expandedProjects[p.id];
+                const isActiveProj = pathname === `/projects/${p.id}`;
+
+                return (
+                  <div key={p.id}>
+                    <div
+                      className={`flex items-center gap-1 pl-1 pr-2 rounded-lg transition-colors ${isActiveProj ? treeRowActive : 'hover:bg-muted'
+                        }`}
+                    >
+                      <button
+                        type="button"
+                        aria-label={isProjExpanded ? 'Collapse project' : 'Expand project'}
+                        aria-expanded={isProjExpanded}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleProject(p.id);
+                        }}
+                        className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronRight
+                          className={`h-3.5 w-3.5 transition-transform ${isProjExpanded ? 'rotate-90' : ''
+                            }`}
+                        />
+                      </button>
+                      <Link
+                        href={`/projects/${p.id}`}
+                        className={`flex-1 flex items-center gap-2 min-w-0 py-1.5 text-[13px] ${isActiveProj ? '' : 'text-foreground/80 hover:text-foreground'
+                          }`}
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: p.color || '#6366f1' }}
+                        />
+                        <span className="truncate">{p.name}</span>
+                      </Link>
+                    </div>
+
+                    {/* Expanded Project Contents (Lists) */}
+                    {isProjExpanded && (
+                      <div className="ml-4 mt-0.5 mb-1 pl-3 space-y-0.5 border-l border-border/60">
+                        {listsByProject[p.id] ? (
+                          listsByProject[p.id].length > 0 ? (
+                            listsByProject[p.id].map((list) => (
+                              <Link
+                                key={list.id}
+                                href={`/projects/${p.id}?listId=${list.id}`}
+                                className={`${treeRow} ${treeRowIdle}`}
+                              >
+                                <ListIcon className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{list.name}</span>
+                              </Link>
+                            ))
+                          ) : (
+                            <p className="px-2.5 py-1.5 text-[13px] text-muted-foreground italic">
+                              No lists yet
+                            </p>
+                          )
+                        ) : (
+                          <p className="px-2.5 py-1.5 text-[13px] text-muted-foreground">
+                            Loading lists…
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
-      <aside className="w-64 shrink-0 border-r border-gray-200 bg-white flex flex-col h-screen">
-        {/* Brand */}
-        <div className="px-5 py-5 border-b border-gray-100">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-md shadow-indigo-200 transition-transform group-hover:scale-105">
-              <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-900 leading-tight">ClickUp Clone</p>
-              <p className="text-[10px] uppercase tracking-wider text-gray-400">Workspace</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          <Link
-            href="/dashboard"
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
-              pathname === '/dashboard'
-                ? 'bg-indigo-50 text-indigo-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`}
+      <aside className="w-64 shrink-0 border-r border-border/80 bg-card/60 backdrop-blur-md flex flex-col h-screen select-none">
+        {/* 1. Workspace Switcher (Top) — owned workspaces only */}
+        <div className="p-3 border-b border-border/60 relative" ref={workspaceMenuRef}>
+          <button
+            onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
+            aria-haspopup="menu"
+            aria-expanded={workspaceMenuOpen}
+            className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted/60 transition text-left group border border-transparent hover:border-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Overview
-          </Link>
-
-          {/* Projects */}
-          <div className="pt-5">
-            <div className="flex items-center justify-between px-3 mb-2">
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-gray-400">
-                Projects
-              </p>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded p-1 transition"
-                title="New project"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-sm tracking-wider">
+                {getInitials(selectedOwned?.name)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold text-foreground leading-snug truncate">
+                  {selectedOwned?.name || 'No workspace yet'}
+                </p>
+                <p className="text-[13px] text-muted-foreground truncate">
+                  {selectedOwned ? 'Your workspace' : 'Create one to get started'}
+                </p>
+              </div>
             </div>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform ${workspaceMenuOpen ? 'rotate-180' : ''
+                }`}
+            />
+          </button>
 
-            {loading && projects.length === 0 ? (
-              // Skeleton for projects loading
-              <div className="space-y-1.5">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-2.5 px-3 py-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-gray-200 shrink-0" />
-                    <span className="h-4 bg-gray-200 rounded flex-1" />
-                    <span className="h-3 w-3 bg-gray-200 rounded" />
-                  </div>
+          {workspaceMenuOpen && (
+            <div
+              role="menu"
+              className="absolute top-[calc(100%+4px)] left-3 right-3 bg-popover border border-border rounded-xl shadow-xl z-50 p-1.5 animate-in fade-in-80 zoom-in-95"
+            >
+              <div className="px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground">
+                Your workspaces
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-0.5 mb-1">
+                {ownedWorkspaces.length === 0 && (
+                  <p className="px-2.5 py-2 text-sm text-muted-foreground italic">
+                    You don’t own a workspace yet
+                  </p>
+                )}
+                {ownedWorkspaces.map((ws) => (
+                  <button
+                    key={ws.id}
+                    role="menuitem"
+                    onClick={() => {
+                      selectWorkspace(ws);
+                      setWorkspaceMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-2 text-sm rounded-lg transition flex items-center justify-between ${selectedOwned?.id === ws.id
+                      ? 'bg-indigo-50/80 text-indigo-950 font-semibold dark:bg-indigo-950/50 dark:text-indigo-200'
+                      : 'text-foreground/80 hover:bg-muted'
+                      }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="h-6 w-6 rounded-md bg-muted flex items-center justify-center text-[11px] font-bold shrink-0">
+                        {getInitials(ws.name)}
+                      </span>
+                      <span className="truncate">{ws.name}</span>
+                    </div>
+                    {selectedOwned?.id === ws.id && (
+                      <Check className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    )}
+                  </button>
                 ))}
               </div>
-            ) : projects.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-gray-400 italic">
-                No projects yet. Click + to create one.
+              <div className="border-t border-border/60 pt-1 space-y-0.5">
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setWorkspaceMenuOpen(false);
+                    setWorkspaceModalOpen(true);
+                  }}
+                  className="w-full text-left px-2.5 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/40 rounded-lg transition flex items-center gap-2 font-medium"
+                >
+                  <Plus className="h-4 w-4" /> Create workspace
+                </button>
+                {activeWorkspace && isAdmin && (
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setWorkspaceMenuOpen(false);
+                      setInviteModalOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 rounded-lg transition flex items-center gap-2 font-medium"
+                  >
+                    <Users className="h-4 w-4" /> Invite members
+                  </button>
+                )}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* 2. Search Bar — filters workspaces */}
+        <div className="px-3 pt-3 pb-1">
+          <label className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50 text-muted-foreground hover:border-border transition focus-within:border-indigo-500/60 focus-within:ring-2 focus-within:ring-indigo-500/30 cursor-text">
+            <Search className="h-4 w-4 shrink-0" />
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setQuery('');
+                  e.currentTarget.blur();
+                }
+                if (e.key === 'Enter' && searchResults.length > 0) {
+                  selectWorkspace(searchResults[0]);
+                  setQuery('');
+                }
+              }}
+              placeholder="Search workspaces…"
+              aria-label="Search workspaces"
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground select-text"
+            />
+            {query ? (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => {
+                  setQuery('');
+                  searchRef.current?.focus();
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
             ) : (
-              <ul className="space-y-0.5">
-                {projects.map((p) => {
-                  const active = pathname === `/projects/${p.id}`;
-                  return (
-                    <li key={p.id}>
-                      <Link
-                        href={`/projects/${p.id}`}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
-                          active
-                            ? 'bg-indigo-50 text-indigo-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span
-                          className="h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: p.color }}
-                        />
-                        <span className="truncate flex-1">{p.name}</span>
-                        
-                        {/* Show number of lists */}
-                        <span className="text-[10px] text-gray-400">
-                          {p._count?.lists ?? 0}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+              <kbd className="text-[11px] bg-background border border-border px-1.5 py-0.5 rounded text-muted-foreground font-mono">
+                ⌘K
+              </kbd>
             )}
-          </div>
+          </label>
+        </div>
+
+        {/* 3. Navigation Tree (or search results) */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1" aria-label="Workspaces">
+          {trimmedQuery ? (
+            searchResults.length > 0 ? (
+              <>
+                <p className="px-2.5 pb-1 text-[13px] font-medium text-muted-foreground">
+                  {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+                </p>
+                {searchResults.map((ws) => (
+                  <button
+                    key={ws.id}
+                    type="button"
+                    onClick={() => {
+                      selectWorkspace(ws);
+                      setQuery('');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                  >
+                    <span className="h-6 w-6 rounded-md bg-muted flex items-center justify-center text-[11px] font-bold shrink-0">
+                      {getInitials(ws.name)}
+                    </span>
+                    <span className="text-sm font-medium flex-1 truncate">{ws.name}</span>
+                    <RoleBadge owner={isOwner(ws)} />
+                  </button>
+                ))}
+              </>
+            ) : (
+              <p className="px-2.5 py-2 text-sm text-muted-foreground">
+                No workspaces match “{query.trim()}”
+              </p>
+            )
+          ) : (
+            treeWorkspaces.map((ws) => renderWorkspace(ws))
+          )}
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-gray-100 px-4 py-3">
-          <p className="text-[10px] text-gray-400">
-            ClickUp Clone · v0.2 · Phase 2
-          </p>
+        {/* 4. User Profile Footer */}
+        <div className="p-3 border-t border-border/60 relative" ref={userMenuRef}>
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+            className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-muted/60 transition text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="h-8 w-8 rounded-full border border-border object-cover shrink-0"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  {user?.name?.[0]?.toUpperCase() || '?'}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{user?.name}</p>
+                <p className="text-[13px] text-muted-foreground truncate">{user?.email}</p>
+              </div>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${userMenuOpen ? 'rotate-180' : ''
+                }`}
+            />
+          </button>
+
+          {userMenuOpen && (
+            <div
+              role="menu"
+              className="absolute bottom-[calc(100%+4px)] left-3 right-3 bg-popover border border-border rounded-xl shadow-xl z-50 p-1.5"
+            >
+              <button
+                role="menuitem"
+                className="w-full text-left px-2.5 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition flex items-center gap-2 font-medium"
+              >
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
       <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <InviteMemberModal open={inviteModalOpen} onClose={() => setInviteModalOpen(false)} />
+      <NewWorkspaceModal open={workspaceModalOpen} onClose={() => setWorkspaceModalOpen(false)} />
     </>
   );
 }

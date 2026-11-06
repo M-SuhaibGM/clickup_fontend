@@ -13,7 +13,7 @@ export default function ProjectDetailSkeleton() {
       </div>
 
       {/* List tabs */}
-      <div className="flex items-center gap-6 mb-6 border-b border-gray-200 pb-2">
+      <div className="flex items-center gap-6 mb-6 border-b border-border pb-2">
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4" />
           <Skeleton className="h-4 w-16" />
@@ -27,9 +27,9 @@ export default function ProjectDetailSkeleton() {
       </div>
 
       {/* Task area */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         {/* Table header */}
-        <div className="border-b border-gray-200 bg-gray-50/50 flex px-4 py-2.5 gap-4">
+        <div className="border-b border-border bg-muted/50 flex px-4 py-2.5 gap-4">
           <Skeleton className="h-3 w-12 flex-1" />
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-3 w-16" />
@@ -38,7 +38,7 @@ export default function ProjectDetailSkeleton() {
         </div>
 
         {/* Task rows */}
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center px-4 py-3.5 gap-4">
               <div className="flex items-center gap-3 flex-1">
@@ -57,7 +57,7 @@ export default function ProjectDetailSkeleton() {
         </div>
 
         {/* Add task row */}
-        <div className="border-t border-gray-100 px-4 py-3">
+        <div className="border-t border-border px-4 py-3">
           <Skeleton className="h-4 w-24" />
         </div>
       </div>

@@ -11,4 +11,26 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   assignee?: { id: string; name: string; avatar: string | null } | null;
+  comments?: Comment[]; //
+  subtasks?: Task[]; // Add this
+  attachments?: string[]; // ← ADD
+
+  _count?: {
+    subtasks: number;
+    comments: number;
+  };
+
+}
+
+export interface Comment {
+  id: string;
+  text: string;
+  taskId: string;
+  userId: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
 }

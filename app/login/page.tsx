@@ -20,7 +20,7 @@ function ErrorBanner() {
   };
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/50 px-4 py-3 text-sm text-red-700 dark:text-red-400">
       <svg className="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.2 14.2A1.5 1.5 0 003.4 20.5h17.2a1.5 1.5 0 001.3-2.44l-8.2-14.2a1.5 1.5 0 00-2.6 0z" />
       </svg>
@@ -34,11 +34,15 @@ function ErrorBanner() {
 /* ─────────────────────────────────────────────────────────── */
 function AuthRedirectGate() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isAuthenticated = useAuthStore((s) => Boolean(s.accessToken));
 
+  // Read the ?redirect= parameter, fallback to /dashboard
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+
   useEffect(() => {
-    if (isAuthenticated) router.replace('/dashboard');
-  }, [isAuthenticated, router]);
+    if (isAuthenticated) router.replace(redirectUrl);
+  }, [isAuthenticated, router, redirectUrl]);
 
   return null;
 }
@@ -48,18 +52,18 @@ function AuthRedirectGate() {
 /* ─────────────────────────────────────────────────────────── */
 function LoginCard() {
   return (
-    <div className="w-full max-w-md space-y-8 rounded-3xl border border-gray-100 bg-white/90 p-8 shadow-2xl shadow-indigo-100/50 backdrop-blur">
+    <div className="w-full max-w-md space-y-8 rounded-3xl border border-border bg-card p-8 shadow-2xl shadow-indigo-100/50 dark:shadow-black/50 backdrop-blur">
       {/* Brand */}
       <div className="space-y-2 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-lg shadow-indigo-300/40">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-lg shadow-indigo-300/40 dark:shadow-none">
           <svg className="h-7 w-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          ClickUp <span className="text-indigo-600">Clone</span>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          ClickUp <span className="text-indigo-600 dark:text-indigo-400">Clone</span>
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Sign in to plan, track, and ship your work.
         </p>
       </div>
@@ -72,7 +76,7 @@ function LoginCard() {
       {/* Google button */}
       <button
         onClick={startGoogleLogin}
-        className="group relative flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md active:translate-y-0 active:shadow-sm"
+        className="group relative flex w-full items-center justify-center gap-3 rounded-xl border border-input bg-background py-3.5 text-sm font-semibold text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:shadow-md active:translate-y-0 active:shadow-sm"
       >
         <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" className="shrink-0">
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z" />
@@ -86,18 +90,18 @@ function LoginCard() {
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-gray-200" />
+          <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-white px-3 text-xs uppercase tracking-wider text-gray-400">Secure sign-in</span>
+          <span className="bg-card px-3 text-xs uppercase tracking-wider text-muted-foreground">Secure sign-in</span>
         </div>
       </div>
 
-      <p className="text-center text-xs leading-relaxed text-gray-400">
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
         By continuing you agree to our{' '}
-        <a href="#" className="text-indigo-500 hover:text-indigo-600 hover:underline">Terms</a>{' '}
+        <a href="#" className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline">Terms</a>{' '}
         and{' '}
-        <a href="#" className="text-indigo-500 hover:text-indigo-600 hover:underline">Privacy Policy</a>.
+        <a href="#" className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline">Privacy Policy</a>.
       </p>
     </div>
   );
@@ -108,10 +112,10 @@ function LoginCard() {
 /* ─────────────────────────────────────────────────────────── */
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 px-4 py-12">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 via-background to-fuchsia-50 dark:from-indigo-950/20 dark:via-background dark:to-fuchsia-950/20 px-4 py-12">
       {/* Decorative blobs */}
-      <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-fuchsia-300/30 blur-3xl" />
+      <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-300/30 dark:bg-indigo-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-fuchsia-300/30 dark:bg-fuchsia-500/10 blur-3xl" />
 
       {/* Auth side-effect leaf */}
       <Suspense fallback={null}>
