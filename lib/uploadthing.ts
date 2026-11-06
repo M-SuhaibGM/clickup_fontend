@@ -1,14 +1,20 @@
+import { generateUploadButton, generateUploadDropzone } from "@uploadthing/react";
+import type { FileRouter } from "uploadthing/next";
 
-import type { OurFileRouter } from "../../backend/src/uploadthing";
-import {
-  generateUploadButton,
-  generateUploadDropzone,
-} from "@uploadthing/react";
+// Define the FileRouter type locally — mirrors backend/src/uploadthing.ts
+export type OurFileRouter = FileRouter & {
+  taskAttachment: {
+    input: {};
+    output: { ufsUrl: string; name: string; size: number };
+  };
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export const UploadButton = generateUploadButton<OurFileRouter>({
-  // CRITICAL: Point to your Express backend, not Next.js
-  url: "http://localhost:5000/api/uploadthing",
+  url: `${API_URL}/api/uploadthing`,
 });
+
 export const UploadDropzone = generateUploadDropzone<OurFileRouter>({
-  url: "http://localhost:5000/api/uploadthing",
+  url: `${API_URL}/api/uploadthing`,
 });
