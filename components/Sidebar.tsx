@@ -261,10 +261,12 @@ export default function Sidebar() {
             >
               <UserIcon className="h-4 w-4 shrink-0" /> Members
             </Link>
-            <button type="button" className={`${treeRow} ${treeRowIdle} w-full text-left`}>
+            <Link
+              href="/workflows"
+              className={`${treeRow} ${pathname === '/workflows' ? treeRowActive : treeRowIdle}`}
+            >
               <Workflow className="h-4 w-4 shrink-0" /> Workflows
-            </button>
-
+            </Link>
             <Link
               href="/my-tasks"
               className={`${treeRow} ${pathname === '/my-tasks' ? treeRowActive : treeRowIdle} justify-between`}
