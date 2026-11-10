@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@/types/auth';
+import { useWorkspaceStore } from './workspaceStore';
 
 interface AuthState {
   accessToken: string | null;
@@ -18,9 +19,18 @@ export const useAuthStore = create<AuthState>()(
       user: null,
 
       setAccessToken: (token) => set({ accessToken: token }),
-      setUser: (user) => set({ user }),
+
+      setUser: (user) => {
+        const prev = get().user;
+        if (prev?.id !== user?.id) {
+          // Identity changed (login, OAuth switch, logout) — wipe workspace state
+          useWorkspaceStore.getState().clear();
+        }
+        set({ user });
+      },
 
       logout: () => {
+        useWorkspaceStore.getState().clear();
         set({ accessToken: null, user: null });
       },
 

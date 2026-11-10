@@ -26,7 +26,6 @@ import {
 import NewProjectModal from './NewProjectModal';
 import InviteMemberModal from './InviteMemberModal';
 import NewWorkspaceModal from './Newworkspacemodal';
-import { api } from '@/lib/api';
 
 // ───────── DEBUG: set to false to silence all [Sidebar] logs ─────────
 const DEBUG = false;
@@ -75,16 +74,12 @@ export default function Sidebar() {
   // The one owned workspace currently shown in the tree (picked from the top dropdown)
   const [selectedOwnedId, setSelectedOwnedId] = useState<string | null>(null);
 
-  // My role (ADMIN | MEMBER) in the active workspace, from WorkspaceMember (used for admin-only actions)
-  const [roleByWorkspace, setRoleByWorkspace] = useState<Record<string, string>>({});
-
   const {
     workspaces,
     activeWorkspace,
     setActiveWorkspace,
-    createWorkspace,
-    pendingTaskCount,           // ← ADD
-    fetchPendingTaskCount       // ← ADD
+    pendingTaskCount,
+    fetchPendingTaskCount,
   } = useWorkspaceStore();
 
   const workspaceMenuRef = useRef<HTMLDivElement>(null);
@@ -94,8 +89,9 @@ export default function Sidebar() {
   // Owned = I'm the workspace's owner (Workspace.ownerId). Everything else I belong to is shared.
   const isOwner = (ws: any) => !!ws && !!user && ws.ownerId === user.id;
 
-  // Admin-only actions (invite) depend on my membership role in the active workspace
-  const isAdmin = !!activeWorkspace && roleByWorkspace[activeWorkspace.id] === 'ADMIN';
+  // Admin-only actions (invite) depend on my membership role in the active workspace.
+  // Role now comes straight from /workspaces — no per-workspace fetch needed.
+  const isAdmin = activeWorkspace?.role === 'ADMIN';
 
   const ownedWorkspaces = useMemo(
     () => workspaces.filter((w: any) => !!user && w.ownerId === user.id),
@@ -121,27 +117,7 @@ export default function Sidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkspace?.id, user?.id]);
 
-  // Load my membership role for the active workspace
-  useEffect(() => {
-    if (!user || !activeWorkspace) return;
-    const wsId = activeWorkspace.id;
-    let cancelled = false;
-    dbg('fetching role →', `GET /workspaces/${wsId}`);
-    api
-      .get<{ workspace: { members: any[] } }>(`/workspaces/${wsId}`)
-      .then(({ data }) => {
-        dbg('role response:', data);
-        const mine = data.workspace.members.find((m) => m.userId === user.id);
-        dbg('my membership:', mine ?? 'NOT FOUND (members[].userId never equals user.id)');
-        if (!cancelled) setRoleByWorkspace((prev) => ({ ...prev, [wsId]: mine?.role ?? 'MEMBER' }));
-      })
-      .catch((err) => console.error('[Sidebar] role request FAILED', err?.response?.status, err?.response?.data ?? err));
-    return () => {
-      cancelled = true;
-    };
-  }, [activeWorkspace?.id, user?.id]);
-
-
+  // Refresh pending task count whenever the active workspace changes
   useEffect(() => {
     if (activeWorkspace) {
       fetchPendingTaskCount(activeWorkspace.id);
@@ -225,9 +201,10 @@ export default function Sidebar() {
 
   const renderWorkspace = (ws: any) => {
     const owner = isOwner(ws);
-    const canManage = owner || isAdmin; // owner, or ADMIN member of the active workspace
     const isWsExpanded = !!expandedWorkspaces[ws.id];
     const isActiveWs = activeWorkspace?.id === ws.id;
+    // Admin check applies to the ACTIVE workspace only (ws.role is that workspace's own role)
+    const canManage = owner || (isActiveWs && isAdmin);
 
     return (
       <div key={ws.id}>
@@ -288,7 +265,7 @@ export default function Sidebar() {
                 <Settings className="h-4 w-4 shrink-0" /> Settings
               </Link>
             )}
-            {isAdmin && (
+            {isAdmin && isActiveWs && (
               <Link
                 href="/history"
                 className={`${treeRow} ${pathname === '/history' ? treeRowActive : treeRowIdle}`}
