@@ -1,10 +1,17 @@
 import type { NextConfig } from "next";
 
-// Server-only env var (no NEXT_PUBLIC_ prefix): used by Next.js to proxy
-// `/api/*` requests to the real backend. In production this makes every
-// browser → backend call look same-origin, which keeps the refresh cookie
-// first-party (fixes Chrome/Safari third-party cookie blocking).
+// Server-only: where the frontend's `/api/*` proxy forwards to.
+// Set BACKEND_URL on Vercel to e.g. https://clickup-backend.onrender.com
+// (no trailing slash, no /api suffix).
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5000';
+
+// For the browser socket: prefer an explicit NEXT_PUBLIC_SOCKET_URL, then
+// NEXT_SOCKET_URL (if you avoid the NEXT_PUBLIC_ prefix on Vercel), then fall
+// back to BACKEND_URL. Exposed to the client via the `env` mapping below.
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL ??
+  process.env.NEXT_SOCKET_URL ??
+  BACKEND_URL;
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
@@ -30,6 +37,12 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+
+  // Expose server-side env vars to the browser at build time without needing
+  // the NEXT_PUBLIC_ prefix on the source variable name.
+  env: {
+    NEXT_PUBLIC_SOCKET_URL: SOCKET_URL,
   },
 
   // Proxy the API through the frontend's own origin so cookies stay first-party

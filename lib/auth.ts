@@ -3,7 +3,10 @@ import { useAuthStore } from '@/store/authStore';
 import type { User } from '@/types/auth';
 
 export function startGoogleLogin() {
-  window.location.href = `${process.env.NEXT_PUBLIC_AUTH_URL}/google`;
+  // Same-origin proxy by default, so the refresh cookie is set on the frontend's domain.
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+  const authUrl = process.env.NEXT_PUBLIC_AUTH_URL || `${apiUrl}/auth`;
+  window.location.href = `${authUrl}/google`;
 }
 
 export async function fetchCurrentUser(): Promise<User | null> {

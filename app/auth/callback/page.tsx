@@ -24,7 +24,8 @@ function CallbackInner() {
       try {
         // Exchange the one-time code for the actual access token.
         // Using plain axios (not the api instance) to avoid the interceptor loop.
-        const authUrl = process.env.NEXT_PUBLIC_AUTH_URL ?? `${process.env.NEXT_PUBLIC_API_URL}/auth`;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+        const authUrl = process.env.NEXT_PUBLIC_AUTH_URL || `${apiUrl}/auth`;
         const { data } = await axios.post<{ accessToken: string }>(
           `${authUrl}/exchange-code`,
           { code },

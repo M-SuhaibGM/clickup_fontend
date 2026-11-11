@@ -2,8 +2,12 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-const REFRESH_URL = `${process.env.NEXT_PUBLIC_AUTH_URL ?? `${API_URL}/auth`}/refresh`;
+// Default to the same-origin Next.js rewrite proxy — keeps cookies first-party
+// in every browser. Override with NEXT_PUBLIC_API_URL only if you intentionally
+// want to call the backend cross-origin (not recommended in production).
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL || `${API_URL}/auth`;
+const REFRESH_URL = `${AUTH_URL}/refresh`;
 
 // Endpoints where a 401 means "bad credentials / no session", never "access token expired"
 const AUTH_ROUTES = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout', '/auth/google'];

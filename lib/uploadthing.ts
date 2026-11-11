@@ -9,12 +9,13 @@ export type OurFileRouter = FileRouter & {
   };
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+// Same-origin proxy by default (see next.config.ts rewrites).
+const UPLOAD_URL = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/uploadthing`;
 
 export const UploadButton = generateUploadButton<OurFileRouter>({
-  url: `${API_URL}/api/uploadthing`,
+  url: UPLOAD_URL,
 });
 
 export const UploadDropzone = generateUploadDropzone<OurFileRouter>({
-  url: `${API_URL}/api/uploadthing`,
+  url: UPLOAD_URL,
 });
