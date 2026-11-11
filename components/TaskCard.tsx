@@ -91,7 +91,7 @@ export default function TaskCard({
                   {task.assignee.name[0]?.toUpperCase()}
                 </div>
               )}
-              <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px] sm:max-w-[100px]">
+              <span className="text-[11px] font-medium text-muted-foreground truncate max-w-20 sm:max-w-25">
                 {task.assignee.name.split(' ')[0]}
               </span>
             </div>

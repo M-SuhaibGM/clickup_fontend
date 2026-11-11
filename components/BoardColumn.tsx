@@ -34,7 +34,7 @@ export default function BoardColumn({
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setNodeRef}
-          className="bg-muted/50 rounded-xl p-2 min-h-[160px] sm:min-h-[400px] border border-border flex flex-col gap-2"
+          className="bg-muted/50 rounded-xl p-2 min-h-40 sm:min-h-100 border border-border flex flex-col gap-2"
         >
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />

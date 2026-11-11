@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 
+// Server-only env var (no NEXT_PUBLIC_ prefix): used by Next.js to proxy
+// `/api/*` requests to the real backend. In production this makes every
+// browser → backend call look same-origin, which keeps the refresh cookie
+// first-party (fixes Chrome/Safari third-party cookie blocking).
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5000';
+
 const nextConfig: NextConfig = {
-  // Optional: If these cause issues with auth, you can remove them. 
-  // cacheComponents: true,
-  // partialPrefetching: true,
-  reactStrictMode: false, // ← Add this line to disable Strict Mode
+  reactStrictMode: false,
   turbopack: {
     rules: {
       "*.css": {
@@ -29,12 +32,13 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // ⚠️ KEEP THIS! This is what fixes your 401/Cookie issues.
+  // Proxy the API through the frontend's own origin so cookies stay first-party
+  // in every browser (Chrome's third-party cookie block, Safari ITP, Brave…).
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        destination: `${BACKEND_URL}/api/:path*`,
       },
     ];
   },

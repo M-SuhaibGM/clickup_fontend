@@ -2,12 +2,19 @@
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/authStore';
 
+// WebSockets can't be proxied by Next.js rewrites — they need to go directly
+// to the backend. Set NEXT_PUBLIC_SOCKET_URL to the public backend origin
+// (e.g. https://your-backend.onrender.com) in production.
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL ??
+  process.env.NEXT_PUBLIC_BACKEND_URL ??
+  'http://localhost:5000';
+
 let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
-    // FIXED: Point directly to the backend port (5000), not the proxy
-    socket = io('http://localhost:5000', {
+    socket = io(SOCKET_URL, {
       auth: {
         token: useAuthStore.getState().accessToken,
       },

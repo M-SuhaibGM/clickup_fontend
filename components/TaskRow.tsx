@@ -69,7 +69,7 @@ export default function TaskRow({
       className="group cursor-pointer border-b border-border/60 hover:bg-muted/30 transition-colors"
     >
       {/* Task Title & Subtasks */}
-      <td className="px-3 sm:px-4 py-3 max-w-[200px] sm:max-w-none">
+      <td className="px-3 sm:px-4 py-3 max-w-50 sm:max-w-none">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Drag handle — works on both desktop & mobile */}
           <button
@@ -147,7 +147,7 @@ export default function TaskRow({
                 {task.assignee.name[0]?.toUpperCase()}
               </div>
             )}
-            <span className="text-[11px] sm:text-xs text-foreground font-medium truncate max-w-[90px] sm:max-w-[130px]">
+            <span className="text-[11px] sm:text-xs text-foreground font-medium truncate max-w-22.5 sm:max-w-32.5">
               {task.assignee.name}
             </span>
           </div>

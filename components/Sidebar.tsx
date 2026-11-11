@@ -265,7 +265,7 @@ export default function Sidebar({
                 <CheckSquare className="h-4 w-4 shrink-0" /> My Tasks
               </div>
               {pendingTaskCount > 0 && (
-                <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-xs">
+                <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-4.5 text-center shadow-xs">
                   {pendingTaskCount}
                 </span>
               )}

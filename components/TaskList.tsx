@@ -99,7 +99,7 @@ export default function TaskList({
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         {/* Table wrapper with smooth horizontal scrolling if needed */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[650px] sm:min-w-full">
+          <table className="w-full min-w-162.5 sm:min-w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="text-left px-4 py-3 font-semibold">Task</th>

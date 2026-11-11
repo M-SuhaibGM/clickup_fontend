@@ -46,7 +46,7 @@ export default function InviteMemberModal({ open, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl border border-border"
