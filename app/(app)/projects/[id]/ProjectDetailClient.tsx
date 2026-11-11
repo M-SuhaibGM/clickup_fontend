@@ -21,7 +21,9 @@ import {
   Settings,
   Trash2,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
+import AiDraftModal from '@/components/AiDraftModal';
 import TaskList from '@/components/TaskList';
 import BoardView from '@/components/BoardView';
 import SocketProvider from '@/components/SocketProvider';
@@ -135,6 +137,7 @@ export default function ProjectDetailClient() {
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAiDraft, setShowAiDraft] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
   const [updatingProject, setUpdatingProject] = useState(false);
@@ -302,6 +305,14 @@ export default function ProjectDetailClient() {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {isAdmin && (
+            <button
+              onClick={() => setShowAiDraft(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-90 transition shadow-sm"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> <span className="hidden sm:inline">AI Plan</span>
+            </button>
+          )}
           <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-input bg-background hover:bg-accent transition">
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
@@ -372,6 +383,16 @@ export default function ProjectDetailClient() {
           )}
         </div>
       )}
+
+      {/* AI Task Planner */}
+      <AiDraftModal
+        open={showAiDraft}
+        onClose={() => setShowAiDraft(false)}
+        projectId={id}
+        lists={orderedLists}
+        defaultListId={activeListId}
+        onDone={(listId) => setActiveListId(listId)}
+      />
 
       {/* Delete List Confirmation */}
       <AlertDialog open={!!listToDelete} onOpenChange={(open) => { if (!open && !deleting) setListToDelete(null); }}>
