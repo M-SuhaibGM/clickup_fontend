@@ -46,7 +46,9 @@ import {
   ChevronDown,
   Lock,
   FileText,
-  X
+  X,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 const STATUSES = [
@@ -103,6 +105,13 @@ export default function TaskPage() {
   const [deletingComment, setDeletingComment] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
   const [addingSubtask, setAddingSubtask] = useState(false);
+
+  // AI assistant state
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [addingAiAll, setAddingAiAll] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
 
   // Init: Fetch task & check role
   useEffect(() => {
@@ -243,6 +252,83 @@ export default function TaskPage() {
       toast.error('Failed to add subtask');
     } finally {
       setAddingSubtask(false);
+    }
+  };
+
+  // ─── AI: generate subtask suggestions ───
+  const handleGenerateSubtasks = async () => {
+    if (!task || aiLoading) return;
+    setAiLoading(true);
+    setAiSuggestions([]);
+    try {
+      const { data } = await api.post<{ subtasks: string[] }>('/ai/subtasks', {
+        title,
+        description,
+      });
+      if (!data.subtasks?.length) {
+        toast.error('AI had no suggestions — try adding a description');
+        return;
+      }
+      // Drop ones that already exist as subtasks
+      const existing = new Set((task.subtasks ?? []).map((st) => st.title.toLowerCase()));
+      setAiSuggestions(data.subtasks.filter((s) => !existing.has(s.toLowerCase())));
+      toast.success('AI suggested some subtasks ✨');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'AI request failed');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Create a single subtask from arbitrary text (shared by AI suggestions)
+  const createSubtask = async (rawTitle: string): Promise<boolean> => {
+    if (!task) return false;
+    try {
+      const { data } = await api.post<{ task: Task }>(`/lists/${listId}/tasks`, {
+        title: rawTitle.trim(),
+        parentId: task.id,
+      });
+      setTask((prev) => (prev ? { ...prev, subtasks: [...(prev.subtasks ?? []), data.task] } : prev));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleAcceptSuggestion = async (text: string) => {
+    const ok = await createSubtask(text);
+    if (ok) {
+      setAiSuggestions((prev) => prev.filter((s) => s !== text));
+    } else {
+      toast.error('Failed to add subtask');
+    }
+  };
+
+  const handleAcceptAllSuggestions = async () => {
+    if (addingAiAll || aiSuggestions.length === 0) return;
+    setAddingAiAll(true);
+    const toAdd = [...aiSuggestions];
+    let added = 0;
+    for (const text of toAdd) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await createSubtask(text)) added++;
+    }
+    setAiSuggestions([]);
+    setAddingAiAll(false);
+    toast.success(`Added ${added} subtask${added === 1 ? '' : 's'}`);
+  };
+
+  // ─── AI: summarize the comment thread ───
+  const handleSummarize = async () => {
+    if (!task || summarizing) return;
+    setSummarizing(true);
+    try {
+      const { data } = await api.post<{ summary: string }>('/ai/summarize', { taskId: task.id });
+      setSummary(data.summary);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Could not summarize');
+    } finally {
+      setSummarizing(false);
     }
   };
 
@@ -412,11 +498,23 @@ export default function TaskPage() {
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <ListTodo className="h-4 w-4 text-indigo-500" /> Subtasks
               </h3>
-              {task.subtasks && task.subtasks.length > 0 && (
-                <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 px-2 py-0.5 rounded-full">
-                  {task.subtasks.filter((st) => st.status === 'DONE').length} / {task.subtasks.length} Completed
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {task.subtasks && task.subtasks.length > 0 && (
+                  <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 px-2 py-0.5 rounded-full">
+                    {task.subtasks.filter((st) => st.status === 'DONE').length} / {task.subtasks.length} Completed
+                  </span>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={handleGenerateSubtasks}
+                    disabled={aiLoading}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-90 disabled:opacity-60 transition shadow-sm"
+                  >
+                    {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {aiLoading ? 'Thinking…' : 'Suggest with AI'}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               {task.subtasks?.map((st) => (
@@ -426,6 +524,42 @@ export default function TaskPage() {
                 </div>
               ))}
             </div>
+            {/* AI suggestions */}
+            {aiSuggestions.length > 0 && (
+              <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> AI suggestions
+                  </span>
+                  <button
+                    onClick={handleAcceptAllSuggestions}
+                    disabled={addingAiAll}
+                    className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 hover:underline disabled:opacity-50"
+                  >
+                    {addingAiAll ? 'Adding…' : 'Add all'}
+                  </button>
+                </div>
+                {aiSuggestions.map((s, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-background/70 border border-border/50 px-3 py-1.5 rounded-lg">
+                    <span className="text-sm flex-1 text-foreground">{s}</span>
+                    <button
+                      onClick={() => handleAcceptSuggestion(s)}
+                      title="Add this subtask"
+                      className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-indigo-500 text-white hover:bg-indigo-600 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setAiSuggestions((prev) => prev.filter((x) => x !== s))}
+                      title="Dismiss"
+                      className="inline-flex items-center justify-center h-6 w-6 rounded-md hover:bg-muted text-muted-foreground transition"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             {isAdmin && (
               <div className="flex items-center gap-2 pt-1">
                 <input value={newSubtask} onChange={(e) => setNewSubtask(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); }} placeholder="Add a new subtask..." disabled={addingSubtask} className="flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs outline-none focus:border-indigo-500" />
@@ -488,9 +622,38 @@ export default function TaskPage() {
 
           {/* Comments */}
           <div className="space-y-4 pt-4 border-t border-border/60">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-indigo-500" /> Activity & Comments
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-indigo-500" /> Activity & Comments
+              </h3>
+              {(task.comments?.length ?? 0) > 0 && (
+                <button
+                  onClick={handleSummarize}
+                  disabled={summarizing}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-900/70 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 disabled:opacity-60 transition"
+                >
+                  {summarizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {summarizing ? 'Summarizing…' : 'Summarize thread'}
+                </button>
+              )}
+            </div>
+
+            {summary && (
+              <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/20 p-3 relative">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 mb-1.5">
+                  <Sparkles className="h-3.5 w-3.5" /> AI summary
+                </div>
+                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{summary}</div>
+                <button
+                  onClick={() => setSummary(null)}
+                  className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                  title="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
             <div className="space-y-4">
               {task.comments?.map((comment) => {
                 const isOwner = currentUser?.id === comment.userId;
