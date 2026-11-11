@@ -38,8 +38,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-store',
+      // Keep only the user profile in localStorage. The access token stays in
+      // memory — it is refreshed from the httpOnly refresh cookie on page load.
+      // This prevents the token from being stolen via XSS.
       partialize: (state) => ({
-        accessToken: state.accessToken,
         user: state.user,
       }),
     }

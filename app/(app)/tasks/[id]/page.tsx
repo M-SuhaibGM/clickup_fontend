@@ -215,11 +215,14 @@ export default function TaskPage() {
 
   const handleToggleSubtask = async (subtask: Task) => {
     const newStatus = subtask.status === 'DONE' ? 'TODO' : 'DONE';
+    // Optimistic update
     setTask(prev => prev ? { ...prev, subtasks: prev.subtasks?.map(st => st.id === subtask.id ? { ...st, status: newStatus } : st) } : prev);
 
     try {
       await api.patch(`/tasks/${subtask.id}`, { status: newStatus });
     } catch {
+      // Revert on failure
+      setTask(prev => prev ? { ...prev, subtasks: prev.subtasks?.map(st => st.id === subtask.id ? { ...st, status: subtask.status } : st) } : prev);
       toast.error('Failed to update subtask');
     }
   };
@@ -301,8 +304,22 @@ export default function TaskPage() {
         {/* Header Section */}
         <div className="p-6 border-b border-border/60 space-y-4">
           <div className="flex items-start gap-4">
-            <button 
-              onClick={() => isAdmin && handleSave()}
+            <button
+              onClick={async () => {
+                if (!isAdmin || saving) return;
+                const newStatus = status === 'DONE' ? 'TODO' : 'DONE';
+                setStatus(newStatus);
+                setSaving(true);
+                try {
+                  await updateTask(task.id, listId, { status: newStatus as any });
+                  toast.success(newStatus === 'DONE' ? 'Task marked done' : 'Task reopened');
+                } catch {
+                  setStatus(status); // revert
+                  toast.error('Failed to update status');
+                } finally {
+                  setSaving(false);
+                }
+              }}
               disabled={!isAdmin || saving}
               className={`mt-1 h-5 w-5 rounded-full shrink-0 flex items-center justify-center border-2 transition ${status === 'DONE' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-muted-foreground/40 text-transparent hover:border-indigo-500'}`}
             >
@@ -505,7 +522,16 @@ export default function TaskPage() {
                         <div className="mt-2 space-y-2">
                           <textarea value={editCommentText} onChange={(e) => setEditCommentText(e.target.value)} className="w-full rounded-lg border border-input bg-background p-2 text-xs outline-none" rows={2} />
                           <div className="flex gap-2">
-                            <button onClick={() => { api.patch(`/tasks/comments/${comment.id}`, { text: editCommentText }); setEditingCommentId(null); toast.success('Comment updated'); }} className="text-xs font-semibold text-white bg-indigo-600 px-2 py-1 rounded">Save</button>
+                            <button onClick={async () => {
+                            try {
+                              await api.patch(`/tasks/comments/${comment.id}`, { text: editCommentText });
+                              setTask(prev => prev ? { ...prev, comments: prev.comments?.map(c => c.id === comment.id ? { ...c, text: editCommentText } : c) } : prev);
+                              setEditingCommentId(null);
+                              toast.success('Comment updated');
+                            } catch {
+                              toast.error('Failed to update comment');
+                            }
+                          }} className="text-xs font-semibold text-white bg-indigo-600 px-2 py-1 rounded">Save</button>
                             <button onClick={() => setEditingCommentId(null)} className="text-xs font-semibold text-foreground px-2 py-1 rounded hover:bg-accent">Cancel</button>
                           </div>
                         </div>
