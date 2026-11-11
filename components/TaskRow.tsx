@@ -1,9 +1,11 @@
+// frontend/components/TaskRow.tsx
 'use client';
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '@/types/task';
 import Image from 'next/image';
+import { CheckSquare } from 'lucide-react';
 
 const PRIORITY_STYLE: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
@@ -43,9 +45,9 @@ export default function TaskRow({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.4 : 1,
     backgroundColor: isDragging ? 'var(--accent)' : undefined,
-    zIndex: isDragging ? 10 : 1,
+    zIndex: isDragging ? 20 : 1,
   };
 
   const due = task.dueDate ? new Date(task.dueDate) : null;
@@ -65,75 +67,95 @@ export default function TaskRow({
         }
         onClick();
       }}
-      className="group cursor-grab active:cursor-grabbing border-b border-border hover:bg-accent/30 transition"
+      className="group cursor-grab active:cursor-grabbing border-b border-border/60 hover:bg-muted/30 transition-colors"
     >
-      <td className="px-3 sm:px-4 py-3">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span className="h-2 w-2 rounded-full shrink-0" style={{
-            backgroundColor:
-              task.status === 'DONE' ? '#10b981'
-                : task.status === 'IN_PROGRESS' ? '#f59e0b'
+      {/* Task Title & Subtasks */}
+      <td className="px-3 sm:px-4 py-3 max-w-[200px] sm:max-w-none">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <span
+            className="h-2 w-2 rounded-full shrink-0 shadow-xs"
+            style={{
+              backgroundColor:
+                task.status === 'DONE'
+                  ? '#10b981'
+                  : task.status === 'IN_PROGRESS'
+                  ? '#f59e0b'
                   : '#9ca3af',
-          }} />
-          <span className="text-xs sm:text-sm font-medium text-foreground truncate">
+            }}
+          />
+          <span className="text-xs sm:text-sm font-medium text-foreground truncate flex-1">
             {task.title}
           </span>
           
-          {/* Subtask Progress Badge */}
+          {/* Subtask Count Badge */}
           {task._count?.subtasks ? (
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-md shrink-0">
+              <CheckSquare className="h-3 w-3" />
               {task._count.subtasks}
             </span>
           ) : null}
         </div>
       </td>
-      <td className="px-3 sm:px-4 py-3">
+
+      {/* Priority */}
+      <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
         <span
-          className={`inline-block rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold whitespace-nowrap ${
+          className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold ${
             PRIORITY_STYLE[task.priority] ?? PRIORITY_STYLE.NORMAL
           }`}
         >
           {task.priority}
         </span>
       </td>
-      <td className="px-3 sm:px-4 py-3">
+
+      {/* Status */}
+      <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
         <span
-          className={`inline-block rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium whitespace-nowrap ${
+          className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium ${
             STATUS_STYLE[task.status] ?? STATUS_STYLE.TODO
           }`}
         >
           {STATUS_LABEL[task.status] ?? task.status}
         </span>
       </td>
-      <td className="px-3 sm:px-4 py-3">
+
+      {/* Assignee */}
+      <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
         {task.assignee ? (
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-2">
             {task.assignee.avatar ? (
               <Image
                 src={task.assignee.avatar}
-                width={24}
-                height={24}
+                width={22}
+                height={22}
                 alt={task.assignee.name}
-                className="h-5 sm:h-6 w-5 sm:w-6 rounded-full border border-border object-cover"
+                className="h-5 sm:h-6 w-5 sm:w-6 rounded-full border border-border object-cover shrink-0"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="h-5 sm:h-6 w-5 sm:w-6 rounded-full bg-indigo-500 text-white text-[9px] sm:text-[10px] flex items-center justify-center font-bold">
+              <div className="h-5 sm:h-6 w-5 sm:w-6 rounded-full bg-indigo-600 text-white text-[9px] sm:text-[10px] flex items-center justify-center font-bold shrink-0">
                 {task.assignee.name[0]?.toUpperCase()}
               </div>
             )}
-            <span className="text-[10px] sm:text-xs text-foreground truncate">{task.assignee.name}</span>
+            <span className="text-[11px] sm:text-xs text-foreground font-medium truncate max-w-[90px] sm:max-w-[130px]">
+              {task.assignee.name}
+            </span>
           </div>
         ) : (
-          <span className="text-[10px] sm:text-xs text-muted-foreground">Unassigned</span>
+          <span className="text-[11px] text-muted-foreground italic">Unassigned</span>
         )}
       </td>
-      <td className="px-3 sm:px-4 py-3 text-[10px] sm:text-xs whitespace-nowrap">
+
+      {/* Due Date */}
+      <td className="px-3 sm:px-4 py-3 text-[11px] sm:text-xs whitespace-nowrap">
         {due ? (
-          <span className={overdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}>
+          <span
+            className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-md ${
+              overdue
+                ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                : 'text-muted-foreground bg-muted/50'
+            }`}
+          >
             {due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         ) : (

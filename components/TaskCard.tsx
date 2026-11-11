@@ -1,15 +1,23 @@
+// frontend/components/TaskCard.tsx
 'use client';
-
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '@/types/task';
-import Image from 'next/image'; // ← Added for Google avatars
+import Image from 'next/image';
+import { Calendar, CheckSquare, AlertCircle } from 'lucide-react';
 
-const PRIORITY_COLORS: Record<string, string> = {
-  URGENT: 'bg-red-500',
-  HIGH: 'bg-orange-500',
-  NORMAL: 'bg-blue-500',
-  LOW: 'bg-gray-400',
+const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  URGENT: { label: 'Urgent', color: 'bg-red-500', bg: 'text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400' },
+  HIGH: { label: 'High', color: 'bg-orange-500', bg: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 dark:text-orange-400' },
+  NORMAL: { label: 'Normal', color: 'bg-blue-500', bg: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400' },
+  LOW: { label: 'Low', color: 'bg-slate-400', bg: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400' },
 };
 
 export default function TaskCard({
@@ -25,8 +33,10 @@ export default function TaskCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
+
+  const priorityInfo = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.NORMAL;
 
   return (
     <div
@@ -42,61 +52,65 @@ export default function TaskCard({
         }
         onClick();
       }}
-      className="bg-card p-3 rounded-lg border border-border shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing transition-all"
+      className="group relative bg-card p-3.5 rounded-xl border border-border shadow-xs hover:shadow-md hover:border-indigo-500/50 dark:hover:border-indigo-500/50 cursor-grab active:cursor-grabbing transition-all duration-200"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-sm font-medium text-foreground leading-tight flex-1">
+      {/* Top Row: Title & Priority Indicator */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <span className="text-[13px] sm:text-sm font-semibold text-foreground leading-snug line-clamp-2 flex-1">
           {task.title}
         </span>
 
-        <div className="flex items-center gap-2 shrink-0 mt-1">
+        {/* Priority Badge / Dot */}
+        <span
+          className={`h-2.5 w-2.5 rounded-full shrink-0 mt-1 shadow-xs ${priorityInfo.color}`}
+          title={`Priority: ${task.priority}`}
+        />
+      </div>
+
+      {/* Middle/Bottom Metadata Row */}
+      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/60">
+        {/* Assignee & Subtasks */}
+        <div className="flex items-center gap-2 min-w-0">
+          {task.assignee ? (
+            <div className="flex items-center gap-1.5 min-w-0">
+              {task.assignee.avatar ? (
+                <Image
+                  src={task.assignee.avatar}
+                  width={22}
+                  height={22}
+                  className="h-5 w-5 rounded-full border border-border object-cover shrink-0"
+                  alt={task.assignee.name}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-5 w-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                  {task.assignee.name[0]?.toUpperCase()}
+                </div>
+              )}
+              <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px] sm:max-w-[100px]">
+                {task.assignee.name.split(' ')[0]}
+              </span>
+            </div>
+          ) : (
+            <span className="text-[11px] text-muted-foreground italic">Unassigned</span>
+          )}
+
           {/* Subtask Badge */}
           {task._count?.subtasks ? (
             <span
-              className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded"
+              className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md"
               title={`${task._count.subtasks} subtasks`}
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+              <CheckSquare className="h-3 w-3" />
               {task._count.subtasks}
             </span>
           ) : null}
-
-          {/* Priority Dot */}
-          <span
-            className={`h-2 w-2 rounded-full ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.NORMAL
-              }`}
-            title={`Priority: ${task.priority}`}
-          />
         </div>
-      </div>
 
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-        {task.assignee ? (
-          <div className="flex items-center gap-1.5">
-            {task.assignee.avatar ? (
-              <Image
-                src={task.assignee.avatar}
-                width={20}
-                height={20}
-                className="h-5 w-5 rounded-full border border-border object-cover"
-                alt={task.assignee.name}
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="h-5 w-5 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[9px] font-bold">
-                {task.assignee.name[0]?.toUpperCase()}
-              </div>
-            )}
-            <span className="text-[10px] text-muted-foreground">{task.assignee.name.split(' ')[0]}</span>
-          </div>
-        ) : (
-          <span className="text-[10px] text-muted-foreground">Unassigned</span>
-        )}
-
+        {/* Due Date Badge */}
         {task.dueDate && (
-          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+          <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md shrink-0">
+            <Calendar className="h-3 w-3" />
             {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}

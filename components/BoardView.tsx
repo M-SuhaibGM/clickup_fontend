@@ -1,3 +1,4 @@
+// frontend/components/BoardView.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -9,6 +10,7 @@ import {
     DndContext,
     closestCorners,
     PointerSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     DragEndEvent,
@@ -29,11 +31,11 @@ const EMPTY_TASKS: never[] = [];
 export default function BoardView({
     listId,
     onTaskClick,
-    isAdmin, // ← ADD
+    isAdmin,
 }: {
     listId: string;
     onTaskClick: (task: Task) => void;
-    isAdmin: boolean; // ← ADD
+    isAdmin: boolean;
 }) {
     const tasks = useTaskStore((s) => s.tasksByList[listId] ?? EMPTY_TASKS);
     const fetchTasks = useTaskStore((s) => s.fetchTasks);
@@ -43,8 +45,15 @@ export default function BoardView({
 
     const [activeTask, setActiveTask] = useState<Task | null>(null);
 
+    // Sensors configured for smooth mouse and mobile touch support
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 200, // 200ms hold before drag starts on mobile
+                tolerance: 5,
+            },
+        })
     );
 
     useEffect(() => {
@@ -77,7 +86,6 @@ export default function BoardView({
         const activeTask = tasks.find((t) => t.id === taskId);
         if (!activeTask) return;
 
-        // Filter out subtasks for reordering logic
         const mainTasks = tasks.filter((t) => !t.parentId);
 
         let newStatus = activeTask.status;
@@ -93,7 +101,6 @@ export default function BoardView({
 
         // Optimistic UI Update
         if (oldIndex !== -1 && newIndex !== -1 && newStatus === activeTask.status) {
-            // Reordering within the same column requires Admin permissions
             if (!isAdmin) {
                 toast.error('Only admins can reorder tasks within a column');
                 return;
@@ -102,7 +109,6 @@ export default function BoardView({
             const subtasks = tasks.filter((t) => t.parentId);
             setTasks(listId, [...newTasks, ...subtasks]);
         } else if (newStatus !== activeTask.status) {
-            // Moving to a new column (status change) — allowed for all members
             const updatedTasks = tasks.map((t) =>
                 t.id === taskId ? { ...t, status: newStatus } : t
             );
@@ -132,23 +138,25 @@ export default function BoardView({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex gap-4 overflow-x-auto pb-4 items-start">
+            {/* Scrollable container optimized for mobile and desktop screens */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-6 items-stretch sm:items-start w-full">
                 {COLUMNS.map((col) => (
-                    <BoardColumn
-                        key={col.id}
-                        id={col.id}
-                        label={col.label}
-                        color={col.color}
-                        tasks={tasksByColumn[col.id as keyof typeof tasksByColumn]}
-                        onTaskClick={onTaskClick}
-                    />
+                    <div key={col.id} className="w-full sm:w-80 sm:shrink-0 flex flex-col">
+                        <BoardColumn
+                            id={col.id}
+                            label={col.label}
+                            color={col.color}
+                            tasks={tasksByColumn[col.id as keyof typeof tasksByColumn]}
+                            onTaskClick={onTaskClick}
+                        />
+                    </div>
                 ))}
             </div>
 
             {/* Drag Overlay */}
             <DragOverlay>
                 {activeTask ? (
-                    <div className="opacity-90 scale-105 cursor-grabbing">
+                    <div className="opacity-95 scale-105 cursor-grabbing shadow-xl">
                         <TaskCard task={activeTask} onClick={() => { }} />
                     </div>
                 ) : null}
