@@ -45,17 +45,12 @@ export default function TaskList({
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Configure sensors for both mouse and touch drag-and-drop support on mobile
+  // Drag handle on each row has `touch-action: none`, so the TouchSensor can
+  // activate immediately on any movement from the handle. The rest of the row
+  // keeps native scrolling / tapping behavior on mobile.
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200, // 200ms hold to start dragging, allowing vertical page scrolling
-        tolerance: 5,
-      },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
   );
 
   // Filter out subtasks (tasks with a parentId)

@@ -45,15 +45,12 @@ export default function BoardView({
 
     const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-    // Sensors configured for smooth mouse and mobile touch support
+    // Drag handle on each card has `touch-action: none`, so touch drags activate
+    // immediately from the handle while the rest of the card stays tappable and
+    // the board stays scrollable on mobile.
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, {
-            activationConstraint: {
-                delay: 200, // 200ms hold before drag starts on mobile
-                tolerance: 5,
-            },
-        })
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
     );
 
     useEffect(() => {

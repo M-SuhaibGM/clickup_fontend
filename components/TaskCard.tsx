@@ -1,17 +1,10 @@
 // frontend/components/TaskCard.tsx
 'use client';
-import {
-  DndContext,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '@/types/task';
 import Image from 'next/image';
-import { Calendar, CheckSquare, AlertCircle } from 'lucide-react';
+import { Calendar, CheckSquare, GripVertical } from 'lucide-react';
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   URGENT: { label: 'Urgent', color: 'bg-red-500', bg: 'text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400' },
@@ -43,7 +36,6 @@ export default function TaskCard({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       onClick={(e) => {
         if (isDragging) {
           e.preventDefault();
@@ -52,10 +44,22 @@ export default function TaskCard({
         }
         onClick();
       }}
-      className="group relative bg-card p-3.5 rounded-xl border border-border shadow-xs hover:shadow-md hover:border-indigo-500/50 dark:hover:border-indigo-500/50 cursor-grab active:cursor-grabbing transition-all duration-200"
+      className="group relative bg-card p-3.5 rounded-xl border border-border shadow-xs hover:shadow-md hover:border-indigo-500/50 dark:hover:border-indigo-500/50 cursor-pointer transition-all duration-200"
     >
-      {/* Top Row: Title & Priority Indicator */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+      {/* Top Row: Drag handle, Title & Priority Indicator */}
+      <div className="flex items-start gap-2 mb-3">
+        {/* Drag handle — the only element that captures drag on mobile */}
+        <button
+          {...listeners}
+          type="button"
+          aria-label="Drag task"
+          onClick={(e) => e.stopPropagation()}
+          style={{ touchAction: 'none' }}
+          className="shrink-0 -ml-1 -mt-0.5 p-1 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 cursor-grab active:cursor-grabbing transition-colors"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+
         <span className="text-[13px] sm:text-sm font-semibold text-foreground leading-snug line-clamp-2 flex-1">
           {task.title}
         </span>

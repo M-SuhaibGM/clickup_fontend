@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '@/types/task';
 import Image from 'next/image';
-import { CheckSquare } from 'lucide-react';
+import { CheckSquare, GripVertical } from 'lucide-react';
 
 const PRIORITY_STYLE: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
@@ -58,7 +58,6 @@ export default function TaskRow({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       onClick={(e) => {
         if (isDragging) {
           e.preventDefault();
@@ -67,11 +66,22 @@ export default function TaskRow({
         }
         onClick();
       }}
-      className="group cursor-grab active:cursor-grabbing border-b border-border/60 hover:bg-muted/30 transition-colors"
+      className="group cursor-pointer border-b border-border/60 hover:bg-muted/30 transition-colors"
     >
       {/* Task Title & Subtasks */}
       <td className="px-3 sm:px-4 py-3 max-w-[200px] sm:max-w-none">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Drag handle — works on both desktop & mobile */}
+          <button
+            {...listeners}
+            type="button"
+            aria-label="Drag to reorder"
+            onClick={(e) => e.stopPropagation()}
+            style={{ touchAction: 'none' }}
+            className="shrink-0 -ml-1 p-1 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 cursor-grab active:cursor-grabbing transition-colors"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
           <span
             className="h-2 w-2 rounded-full shrink-0 shadow-xs"
             style={{

@@ -30,6 +30,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -75,6 +76,7 @@ function SortableListTab({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
+    touchAction: 'none' as const,
   };
 
   return (
@@ -159,7 +161,10 @@ export default function ProjectDetailClient() {
   }, [lists]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 8 },
+    })
   );
 
   useEffect(() => {
