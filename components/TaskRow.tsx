@@ -67,15 +67,15 @@ export default function TaskRow({
       }}
       className="group cursor-grab active:cursor-grabbing border-b border-border hover:bg-accent/30 transition"
     >
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
+      <td className="px-3 sm:px-4 py-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span className="h-2 w-2 rounded-full shrink-0" style={{
             backgroundColor:
               task.status === 'DONE' ? '#10b981'
                 : task.status === 'IN_PROGRESS' ? '#f59e0b'
                   : '#9ca3af',
           }} />
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="text-xs sm:text-sm font-medium text-foreground truncate">
             {task.title}
           </span>
           
@@ -90,48 +90,48 @@ export default function TaskRow({
           ) : null}
         </div>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 sm:px-4 py-3">
         <span
-          className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+          className={`inline-block rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold whitespace-nowrap ${
             PRIORITY_STYLE[task.priority] ?? PRIORITY_STYLE.NORMAL
           }`}
         >
           {task.priority}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 sm:px-4 py-3">
         <span
-          className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+          className={`inline-block rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium whitespace-nowrap ${
             STATUS_STYLE[task.status] ?? STATUS_STYLE.TODO
           }`}
         >
           {STATUS_LABEL[task.status] ?? task.status}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 sm:px-4 py-3">
         {task.assignee ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {task.assignee.avatar ? (
-              <Image 
-                src={task.assignee.avatar} 
+              <Image
+                src={task.assignee.avatar}
                 width={24}
                 height={24}
-                alt={task.assignee.name} 
-                className="h-6 w-6 rounded-full border border-border object-cover" 
+                alt={task.assignee.name}
+                className="h-5 sm:h-6 w-5 sm:w-6 rounded-full border border-border object-cover"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="h-6 w-6 rounded-full bg-indigo-500 text-white text-[10px] flex items-center justify-center font-bold">
+              <div className="h-5 sm:h-6 w-5 sm:w-6 rounded-full bg-indigo-500 text-white text-[9px] sm:text-[10px] flex items-center justify-center font-bold">
                 {task.assignee.name[0]?.toUpperCase()}
               </div>
             )}
-            <span className="text-xs text-foreground truncate">{task.assignee.name}</span>
+            <span className="text-[10px] sm:text-xs text-foreground truncate">{task.assignee.name}</span>
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">Unassigned</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">Unassigned</span>
         )}
       </td>
-      <td className="px-4 py-3 text-xs">
+      <td className="px-3 sm:px-4 py-3 text-[10px] sm:text-xs whitespace-nowrap">
         {due ? (
           <span className={overdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}>
             {due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

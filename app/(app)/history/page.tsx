@@ -123,12 +123,12 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <History className="h-6 w-6 text-indigo-500" /> Activity History
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+          <History className="h-5 sm:h-6 w-5 sm:w-6 text-indigo-500" /> Activity History
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
           Everything that's happening in <span className="font-semibold text-foreground">{activeWorkspace?.name}</span>.
         </p>
       </div>
@@ -146,18 +146,18 @@ export default function HistoryPage() {
             const entityColor = ENTITY_COLORS[activity.entityType] || ENTITY_COLORS.project;
 
             return (
-              <div key={activity.id} className="flex gap-4 group relative">
+              <div key={activity.id} className="flex gap-3 sm:gap-4 group relative">
                 {/* Timeline Line */}
                 {index !== activities.length - 1 && (
-                  <div className="absolute left-5 top-10 bottom-0 w-px bg-border" aria-hidden />
+                  <div className="absolute left-4 sm:left-5 top-10 bottom-0 w-px bg-border" aria-hidden />
                 )}
 
                 {/* User Avatar */}
                 <div className="relative z-10 shrink-0">
                   {activity.user.avatar ? (
-                    <Image src={activity.user.avatar} alt={activity.user.name} width={40} height={40} className="h-10 w-10 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
+                    <Image src={activity.user.avatar} alt={activity.user.name} width={40} height={40} className="h-8 sm:h-10 w-8 sm:w-10 rounded-full border border-border object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+                    <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm">
                       {activity.user.name[0]?.toUpperCase()}
                     </div>
                   )}
@@ -165,7 +165,7 @@ export default function HistoryPage() {
 
                 {/* Content */}
                 <div className="flex-1 pb-6 pt-1">
-                  <p className="text-sm text-foreground leading-relaxed">
+                  <p className="text-xs sm:text-sm text-foreground leading-relaxed">
                     <span className="font-semibold">{activity.user.name}</span>{' '}
                     <span className="text-muted-foreground">{activity.action}</span>{' '}
                     <span className="font-medium">{activity.entityType}</span>{' '}

@@ -281,36 +281,36 @@ export default function ProjectDetailClient() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <SocketProvider projectId={id} />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-6">
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center shadow-xs border border-white/20" style={{ backgroundColor: project.color || '#6366f1' }}>
-            <FolderKanban className="h-5 w-5 text-white" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border/60 pb-4 sm:pb-6">
+        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+          <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-xl shrink-0 flex items-center justify-center shadow-xs border border-white/20" style={{ backgroundColor: project.color || '#6366f1' }}>
+            <FolderKanban className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-foreground tracking-tight truncate">{project.name}</h1>
-            {project.description && <p className="text-xs text-muted-foreground truncate max-w-xl mt-0.5">{project.description}</p>}
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight truncate">{project.name}</h1>
+            {project.description && <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-xl mt-0.5">{project.description}</p>}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-input bg-background hover:bg-accent transition">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-input bg-background hover:bg-accent transition">
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
           {isAdmin && (
-            <button onClick={() => setShowSettings(true)} className="p-2 text-muted-foreground hover:text-foreground rounded-md border border-input bg-background hover:bg-accent transition">
-              <Settings className="h-3.5 w-3.5" />
+            <button onClick={() => setShowSettings(true)} className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-md border border-input bg-background hover:bg-accent transition">
+              <Settings className="h-4 sm:h-3.5 w-4 sm:w-3.5" />
             </button>
           )}
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 -mx-4 sm:mx-0 px-4 sm:px-0">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={orderedLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
               {orderedLists.map((l) => (

@@ -43,29 +43,38 @@ const treeRowActive =
 function RoleBadge({ owner }: { owner: boolean }) {
   return (
     <span
-      className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none ${owner
-        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
-        : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-        }`}
+      className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none ${
+        owner
+          ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
+          : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+      }`}
     >
       {owner ? 'Owner' : 'Shared'}
     </span>
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  onClose,
+  onCreateProject,
+  onInvite,
+  onCreateWorkspace
+}: {
+  onClose?: () => void;
+  onCreateProject?: () => void;
+  onInvite?: () => void;
+  onCreateWorkspace?: () => void;
+}) {
   const pathname = usePathname();
   const projects = useProjectStore((s) => s.projects);
   const listsByProject = useProjectStore((s) => s.listsByProject);
   const fetchProjectLists = useProjectStore((s) => s.fetchProjectLists);
   const user = useAuthStore((s) => s.user);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // Track expansion states
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({});
@@ -90,7 +99,6 @@ export default function Sidebar() {
   const isOwner = (ws: any) => !!ws && !!user && ws.ownerId === user.id;
 
   // Admin-only actions (invite) depend on my membership role in the active workspace.
-  // Role now comes straight from /workspaces — no per-workspace fetch needed.
   const isAdmin = activeWorkspace?.role === 'ADMIN';
 
   const ownedWorkspaces = useMemo(
@@ -203,7 +211,6 @@ export default function Sidebar() {
     const owner = isOwner(ws);
     const isWsExpanded = !!expandedWorkspaces[ws.id];
     const isActiveWs = activeWorkspace?.id === ws.id;
-    // Admin check applies to the ACTIVE workspace only (ws.role is that workspace's own role)
     const canManage = owner || (isActiveWs && isAdmin);
 
     return (
@@ -213,39 +220,45 @@ export default function Sidebar() {
           type="button"
           aria-expanded={isWsExpanded}
           onClick={() => handleWorkspaceClick(ws)}
-          className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${isActiveWs ? 'bg-indigo-50/60 dark:bg-indigo-950/20' : 'hover:bg-muted'
-            }`}
+          className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${
+            isActiveWs ? 'bg-indigo-50/60 dark:bg-indigo-950/20' : 'hover:bg-muted'
+          }`}
         >
           <ChevronRight
-            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isWsExpanded && isActiveWs ? 'rotate-90' : ''
-              }`}
+            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${
+              isWsExpanded && isActiveWs ? 'rotate-90' : ''
+            }`}
           />
           <span
-            className={`text-sm font-semibold flex-1 truncate ${isActiveWs ? 'text-indigo-700 dark:text-indigo-300' : 'text-foreground'
-              }`}
+            className={`text-sm font-semibold flex-1 truncate ${
+              isActiveWs ? 'text-indigo-700 dark:text-indigo-300' : 'text-foreground'
+            }`}
           >
             {ws.name}
           </span>
           <RoleBadge owner={owner} />
         </button>
 
-        {/* Expanded Workspace Contents (only the active workspace has loaded data) */}
+        {/* Expanded Workspace Contents */}
         {isWsExpanded && isActiveWs && (
           <div className="ml-4 mt-1 mb-2 pl-3 space-y-0.5 border-l border-border/60">
             <Link
               href="/members"
+              onClick={onClose}
               className={`${treeRow} ${pathname === '/members' ? treeRowActive : treeRowIdle}`}
             >
               <UserIcon className="h-4 w-4 shrink-0" /> Members
             </Link>
             <Link
               href="/workflows"
+              onClick={onClose}
               className={`${treeRow} ${pathname === '/workflows' ? treeRowActive : treeRowIdle}`}
             >
               <Workflow className="h-4 w-4 shrink-0" /> Workflows
             </Link>
             <Link
               href="/my-tasks"
+              onClick={onClose}
               className={`${treeRow} ${pathname === '/my-tasks' ? treeRowActive : treeRowIdle} justify-between`}
             >
               <div className="flex items-center gap-2">
@@ -260,6 +273,7 @@ export default function Sidebar() {
             {canManage && (
               <Link
                 href="/settings"
+                onClick={onClose}
                 className={`${treeRow} ${pathname === '/settings' ? treeRowActive : treeRowIdle}`}
               >
                 <Settings className="h-4 w-4 shrink-0" /> Settings
@@ -268,6 +282,7 @@ export default function Sidebar() {
             {isAdmin && isActiveWs && (
               <Link
                 href="/history"
+                onClick={onClose}
                 className={`${treeRow} ${pathname === '/history' ? treeRowActive : treeRowIdle}`}
               >
                 <History className="h-4 w-4 shrink-0" /> History
@@ -278,14 +293,13 @@ export default function Sidebar() {
             <div className="pt-3">
               <div className="flex items-center justify-between px-2.5 mb-1 min-h-6">
                 <span className="text-[13px] font-medium text-muted-foreground">Projects</span>
-                {/* Only the workspace owner can add projects; shared workspaces are view-only here */}
                 {owner && (
                   <button
                     type="button"
                     aria-label="New project"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setModalOpen(true);
+                      onCreateProject?.();
                     }}
                     className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
                   >
@@ -307,8 +321,9 @@ export default function Sidebar() {
                 return (
                   <div key={p.id}>
                     <div
-                      className={`flex items-center gap-1 pl-1 pr-2 rounded-lg transition-colors ${isActiveProj ? treeRowActive : 'hover:bg-muted'
-                        }`}
+                      className={`flex items-center gap-1 pl-1 pr-2 rounded-lg transition-colors ${
+                        isActiveProj ? treeRowActive : 'hover:bg-muted'
+                      }`}
                     >
                       <button
                         type="button"
@@ -321,14 +336,17 @@ export default function Sidebar() {
                         className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground"
                       >
                         <ChevronRight
-                          className={`h-3.5 w-3.5 transition-transform ${isProjExpanded ? 'rotate-90' : ''
-                            }`}
+                          className={`h-3.5 w-3.5 transition-transform ${
+                            isProjExpanded ? 'rotate-90' : ''
+                          }`}
                         />
                       </button>
                       <Link
                         href={`/projects/${p.id}`}
-                        className={`flex-1 flex items-center gap-2 min-w-0 py-1.5 text-[13px] ${isActiveProj ? '' : 'text-foreground/80 hover:text-foreground'
-                          }`}
+                        onClick={onClose}
+                        className={`flex-1 flex items-center gap-2 min-w-0 py-1.5 text-[13px] ${
+                          isActiveProj ? '' : 'text-foreground/80 hover:text-foreground'
+                        }`}
                       >
                         <span
                           className="h-2 w-2 rounded-full shrink-0"
@@ -347,6 +365,7 @@ export default function Sidebar() {
                               <Link
                                 key={list.id}
                                 href={`/projects/${p.id}?listId=${list.id}`}
+                                onClick={onClose}
                                 className={`${treeRow} ${treeRowIdle}`}
                               >
                                 <ListIcon className="h-3.5 w-3.5 shrink-0" />
@@ -377,8 +396,9 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="w-64 shrink-0 border-r border-border/80 bg-card/60 backdrop-blur-md flex flex-col h-screen select-none">
-        {/* 1. Workspace Switcher (Top) — owned workspaces only */}
+      {/* Sidebar container */}
+      <aside className="w-64 shrink-0 border-r border-border/80 bg-card/60 backdrop-blur-md flex flex-col h-screen select-none overflow-y-auto">
+        {/* 1. Workspace Switcher (Top) */}
         <div className="p-3 border-b border-border/60 relative" ref={workspaceMenuRef}>
           <button
             onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
@@ -400,8 +420,9 @@ export default function Sidebar() {
               </div>
             </div>
             <ChevronDown
-              className={`h-4 w-4 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform ${workspaceMenuOpen ? 'rotate-180' : ''
-                }`}
+              className={`h-4 w-4 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform ${
+                workspaceMenuOpen ? 'rotate-180' : ''
+              }`}
             />
           </button>
 
@@ -427,10 +448,11 @@ export default function Sidebar() {
                       selectWorkspace(ws);
                       setWorkspaceMenuOpen(false);
                     }}
-                    className={`w-full text-left px-2.5 py-2 text-sm rounded-lg transition flex items-center justify-between ${selectedOwned?.id === ws.id
-                      ? 'bg-indigo-50/80 text-indigo-950 font-semibold dark:bg-indigo-950/50 dark:text-indigo-200'
-                      : 'text-foreground/80 hover:bg-muted'
-                      }`}
+                    className={`w-full text-left px-2.5 py-2 text-sm rounded-lg transition flex items-center justify-between ${
+                      selectedOwned?.id === ws.id
+                        ? 'bg-indigo-50/80 text-indigo-950 font-semibold dark:bg-indigo-950/50 dark:text-indigo-200'
+                        : 'text-foreground/80 hover:bg-muted'
+                    }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="h-6 w-6 rounded-md bg-muted flex items-center justify-center text-[11px] font-bold shrink-0">
@@ -449,7 +471,7 @@ export default function Sidebar() {
                   role="menuitem"
                   onClick={() => {
                     setWorkspaceMenuOpen(false);
-                    setWorkspaceModalOpen(true);
+                    onCreateWorkspace?.();
                   }}
                   className="w-full text-left px-2.5 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/40 rounded-lg transition flex items-center gap-2 font-medium"
                 >
@@ -472,7 +494,7 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* 2. Search Bar — filters workspaces */}
+        {/* 2. Search Bar */}
         <div className="px-3 pt-3 pb-1">
           <label className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50 text-muted-foreground hover:border-border transition focus-within:border-indigo-500/60 focus-within:ring-2 focus-within:ring-indigo-500/30 cursor-text">
             <Search className="h-4 w-4 shrink-0" />
@@ -515,7 +537,7 @@ export default function Sidebar() {
           </label>
         </div>
 
-        {/* 3. Navigation Tree (or search results) */}
+        {/* 3. Navigation Tree */}
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1" aria-label="Workspaces">
           {trimmedQuery ? (
             searchResults.length > 0 ? (
@@ -577,8 +599,9 @@ export default function Sidebar() {
               </div>
             </div>
             <ChevronDown
-              className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${userMenuOpen ? 'rotate-180' : ''
-                }`}
+              className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${
+                userMenuOpen ? 'rotate-180' : ''
+              }`}
             />
           </button>
 
@@ -598,9 +621,11 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} />
-      <InviteMemberModal open={inviteModalOpen} onClose={() => setInviteModalOpen(false)} />
-      <NewWorkspaceModal open={workspaceModalOpen} onClose={() => setWorkspaceModalOpen(false)} />
+      <InviteMemberModal
+        open={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        // onInvite={onInvite}
+      />
     </>
   );
 }

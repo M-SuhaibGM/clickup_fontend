@@ -11,12 +11,12 @@ export default function OverviewPage() {
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace); // ← Get workspace
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
           Welcome back, {user?.name?.split(' ')[0] ?? 'there'} 👋
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
           Here's what's happening in <span className="font-semibold text-foreground">{activeWorkspace?.name ?? 'your workspace'}</span>.
         </p>
       </div>

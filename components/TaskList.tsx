@@ -97,16 +97,16 @@ const handleAdd = async () => {
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto">
         {/* Table */}
-        <table className="w-full">
+        <table className="w-full min-w-max md:min-w-full">
           <thead>
-            <tr className="border-b border-border bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <th className="text-left px-4 py-2.5 font-semibold">Task</th>
-              <th className="text-left px-4 py-2.5 font-semibold w-28">Priority</th>
-              <th className="text-left px-4 py-2.5 font-semibold w-32">Status</th>
-              <th className="text-left px-4 py-2.5 font-semibold w-40">Assignee</th>
-              <th className="text-left px-4 py-2.5 font-semibold w-24">Due</th>
+            <tr className="border-b border-border bg-muted/50 text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
+              <th className="text-left px-3 sm:px-4 py-2.5 font-semibold">Task</th>
+              <th className="text-left px-3 sm:px-4 py-2.5 font-semibold w-24 sm:w-28">Priority</th>
+              <th className="text-left px-3 sm:px-4 py-2.5 font-semibold w-28 sm:w-32">Status</th>
+              <th className="text-left px-3 sm:px-4 py-2.5 font-semibold w-32 sm:w-40">Assignee</th>
+              <th className="text-left px-3 sm:px-4 py-2.5 font-semibold w-20 sm:w-24">Due</th>
             </tr>
           </thead>
 
@@ -119,26 +119,26 @@ const handleAdd = async () => {
                 // ─── SKELETON ROWS ───
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 sm:px-4 py-3.5">
+                      <div className="flex items-center gap-2 sm:gap-3">
                         <Skeleton className="h-2 w-2 rounded-full shrink-0" />
-                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-4 w-32 sm:w-48" />
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-5 w-16 rounded-full" />
+                    <td className="px-3 sm:px-4 py-3.5">
+                      <Skeleton className="h-5 w-14 sm:w-16 rounded-full" />
                     </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-5 w-20 rounded-full" />
+                    <td className="px-3 sm:px-4 py-3.5">
+                      <Skeleton className="h-5 w-16 sm:w-20 rounded-full" />
                     </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-6 w-6 rounded-full" />
-                        <Skeleton className="h-3 w-12" />
+                    <td className="px-3 sm:px-4 py-3.5">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <Skeleton className="h-5 sm:h-6 w-5 sm:w-6 rounded-full" />
+                        <Skeleton className="h-3 w-10 sm:w-12" />
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-3 w-10" />
+                    <td className="px-3 sm:px-4 py-3.5">
+                      <Skeleton className="h-3 w-8 sm:w-10" />
                     </td>
                   </tr>
                 ))
