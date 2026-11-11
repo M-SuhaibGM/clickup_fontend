@@ -6,8 +6,10 @@ import { useWorkspaceStore } from './workspaceStore';
 interface AuthState {
   accessToken: string | null;
   user: User | null;
+  hasHydrated: boolean;
   setAccessToken: (token: string) => void;
   setUser: (user: User | null) => void;
+  setHasHydrated: (value: boolean) => void;
   logout: () => void;
   isAuthenticated: () => boolean;
 }
@@ -17,8 +19,11 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       accessToken: null,
       user: null,
+      hasHydrated: false,
 
       setAccessToken: (token) => set({ accessToken: token }),
+
+      setHasHydrated: (value) => set({ hasHydrated: value }),
 
       setUser: (user) => {
         const prev = get().user;

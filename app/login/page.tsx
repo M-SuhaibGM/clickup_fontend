@@ -35,14 +35,16 @@ function ErrorBanner() {
 function AuthRedirectGate() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const isAuthenticated = useAuthStore((s) => Boolean(s.accessToken));
 
   // Read the ?redirect= parameter, fallback to /dashboard
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (isAuthenticated) router.replace(redirectUrl);
-  }, [isAuthenticated, router, redirectUrl]);
+  }, [hasHydrated, isAuthenticated, router, redirectUrl]);
 
   return null;
 }
@@ -108,6 +110,24 @@ function LoginCard() {
 }
 
 /* ─────────────────────────────────────────────────────────── */
+/* Leaf: decides what to show based on hydration/auth state    */
+/* ─────────────────────────────────────────────────────────── */
+function LoginBody() {
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
+  const isAuthenticated = useAuthStore((s) => Boolean(s.accessToken));
+
+  // Still refreshing the session, or already authenticated and
+  // about to be redirected — show a spinner instead of the card.
+  if (!hasHydrated || isAuthenticated) {
+    return (
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
+    );
+  }
+
+  return <LoginCard />;
+}
+
+/* ─────────────────────────────────────────────────────────── */
 /* Page — Prerenderable shell + Suspense-wrapped dynamic bits  */
 /* ─────────────────────────────────────────────────────────── */
 export default function LoginPage() {
@@ -122,8 +142,8 @@ export default function LoginPage() {
         <AuthRedirectGate />
       </Suspense>
 
-      {/* Visual card */}
-      <LoginCard />
+      {/* Visual body (card or spinner, based on auth state) */}
+      <LoginBody />
     </main>
   );
 }

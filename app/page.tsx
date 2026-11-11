@@ -6,11 +6,13 @@ import { useAuthStore } from '@/store/authStore';
 
 export default function Home() {
   const router = useRouter();
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const isAuth = useAuthStore((s) => s.isAuthenticated());
 
   useEffect(() => {
+    if (!hasHydrated) return;
     router.replace(isAuth ? '/dashboard' : '/login');
-  }, [isAuth, router]);
+  }, [hasHydrated, isAuth, router]);
 
   return null;
 }

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore'; // ← Import
-import { fetchCurrentUser } from '@/lib/auth';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import AppShellSkeleton from './AppShellSkeleton';
@@ -17,6 +16,7 @@ import NewWorkspaceModal from './Newworkspacemodal';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const fetchProjects = useProjectStore((s) => s.fetchProjects);
 
   // Workspace state
@@ -29,19 +29,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
 
-  // 1. Initial Load: Fetch user and workspaces
+  // 1. Initial Load: wait for auth bootstrap, then fetch workspaces
   useEffect(() => {
+    if (!hasHydrated) return;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
     (async () => {
-      const me = user ?? (await fetchCurrentUser());
-      if (!me) {
-        router.replace('/login');
-        return;
-      }
       await fetchWorkspaces();
       setReady(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasHydrated, user]);
 
   // 2. When the Active Workspace changes, fetch its projects
   useEffect(() => {

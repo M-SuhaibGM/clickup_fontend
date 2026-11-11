@@ -29,7 +29,7 @@ api.interceptors.request.use((config) => {
 // cookie and is never touched here (it is not rotated).
 let refreshPromise: Promise<string> | null = null;
 
-function refreshAccessToken(): Promise<string> {
+export function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     // Plain axios (not `api`) so this call can never trigger the interceptor again
     refreshPromise = axios
