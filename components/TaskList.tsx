@@ -197,7 +197,8 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
         </div>
 
         {/* Table */}
-        <div className="w-full">
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[800px]">
           <div className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#8a8c91] border-b border-[#333438]">
             <div>Name</div>
             <div>Assignee</div>
@@ -256,6 +257,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
                />
             </div>
           )}
+          </div>
         </div>
       </div>
 

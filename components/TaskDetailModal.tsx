@@ -28,6 +28,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   FileText,
   Pencil,
   Trash2,
@@ -38,6 +39,7 @@ import {
   Bell,
   Search,
   Send,
+  Ban,
 } from 'lucide-react';
 
 const STATUSES = [
@@ -52,6 +54,45 @@ const PRIORITIES = [
   { value: 'HIGH', label: 'High', color: '#f59e0b' },
   { value: 'URGENT', label: 'Urgent', color: '#ef4444' },
 ];
+
+function getQuickDates() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const thisWeekend = new Date(today);
+  const dow = today.getDay();
+  thisWeekend.setDate(thisWeekend.getDate() + (dow === 6 ? 7 : 6 - dow));
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + (dow === 1 ? 7 : (8 - dow) % 7));
+  const nextWeekend = new Date(thisWeekend); nextWeekend.setDate(nextWeekend.getDate() + 7);
+  const twoWeeks = new Date(today); twoWeeks.setDate(twoWeeks.getDate() + 14);
+  const fourWeeks = new Date(today); fourWeeks.setDate(fourWeeks.getDate() + 28);
+  const dayName = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short' });
+  const dateFmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  return [
+    { label: 'Today', hint: dayName(today), date: today },
+    { label: 'Tomorrow', hint: dayName(tomorrow), date: tomorrow },
+    { label: 'This weekend', hint: dayName(thisWeekend), date: thisWeekend },
+    { label: 'Next week', hint: dateFmt(nextWeek), date: nextWeek },
+    { label: 'Next weekend', hint: dateFmt(nextWeekend), date: nextWeekend },
+    { label: '2 weeks', hint: dateFmt(twoWeeks), date: twoWeeks },
+    { label: '4 weeks', hint: dateFmt(fourWeeks), date: fourWeeks },
+  ];
+}
+
+function getCalendarDays(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay();
+  const totalDays = lastDay.getDate();
+  const days: { day: number; currentMonth: boolean }[] = [];
+  const prevLast = new Date(year, month, 0).getDate();
+  for (let i = startDow - 1; i >= 0; i--) days.push({ day: prevLast - i, currentMonth: false });
+  for (let d = 1; d <= totalDays; d++) days.push({ day: d, currentMonth: true });
+  const remaining = 42 - days.length;
+  for (let d = 1; d <= remaining; d++) days.push({ day: d, currentMonth: false });
+  return days;
+}
 
 interface TaskDetailModalProps {
   taskId: string;
@@ -94,6 +135,9 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
   const [showAttachments, setShowAttachments] = useState(false);
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [confirmDialog, setConfirmDialog] = useState<{
     title: string;
     message: string;
@@ -103,6 +147,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
   const assigneeRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
+  const dateRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -146,6 +191,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
       if (assigneeRef.current && !assigneeRef.current.contains(e.target as Node)) setShowAssigneeDropdown(false);
       if (statusRef.current && !statusRef.current.contains(e.target as Node)) setShowStatusDropdown(false);
       if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) setShowPriorityDropdown(false);
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) setShowDateDropdown(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -184,6 +230,18 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
   const handleDueDateChange = async (date: string) => {
     setDueDate(date);
     await handleSave('dueDate', date ? new Date(date).toISOString() : null);
+  };
+
+  const handleDateSelect = async (date: Date | null) => {
+    setShowDateDropdown(false);
+    if (date) {
+      const iso = date.toISOString().slice(0, 10);
+      setDueDate(iso);
+      await handleSave('dueDate', date.toISOString());
+    } else {
+      setDueDate('');
+      await handleSave('dueDate', null);
+    }
   };
 
   const handleTitleBlur = async () => {
@@ -539,14 +597,121 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                   <span className="w-28 text-xs text-[#8a8c91] flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5" /> Dates
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="relative" ref={dateRef}>
                     {isAdmin ? (
-                      <input
-                        type="date"
-                        value={dueDate}
-                        onChange={(e) => handleDueDateChange(e.target.value)}
-                        className="bg-[#2a2b2e] border border-[#333438] rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500 transition"
-                      />
+                      <>
+                        <button
+                          onClick={() => {
+                            const d = dueDate ? new Date(dueDate) : new Date();
+                            setCalMonth(d.getMonth());
+                            setCalYear(d.getFullYear());
+                            setShowDateDropdown(!showDateDropdown);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8a8c91] hover:text-white transition"
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                          {dueDate ? (
+                            <span className="text-white">{new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          ) : (
+                            <span>Empty</span>
+                          )}
+                          <ChevronDown className="h-3 w-3 text-[#8a8c91]" />
+                        </button>
+                        {showDateDropdown && (() => {
+                          const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+                          const calDays = getCalendarDays(calYear, calMonth);
+                          const qDates = getQuickDates();
+                          const selDate = dueDate ? new Date(dueDate) : null;
+                          if (selDate) selDate.setHours(0, 0, 0, 0);
+                          return (
+                            <div className="absolute top-full left-0 mt-1 w-[460px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl z-30 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+                              <div className="flex border-b border-[#333438]">
+                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-[#8a8c91] border-b-2 border-transparent">
+                                  <Calendar className="h-3.5 w-3.5" /> Start date
+                                </button>
+                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-white font-semibold border-b-2 border-indigo-500">
+                                  <Calendar className="h-3.5 w-3.5" /> Due date
+                                </button>
+                              </div>
+                              <div className="flex">
+                                <div className="w-[190px] border-r border-[#333438] py-1">
+                                  {qDates.map(opt => (
+                                    <button
+                                      key={opt.label}
+                                      onClick={() => handleDateSelect(opt.date)}
+                                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-white hover:bg-[#333438] transition"
+                                    >
+                                      <span>{opt.label}</span>
+                                      <span className="text-[10px] text-[#8a8c91]">{opt.hint}</span>
+                                    </button>
+                                  ))}
+                                  {selDate && (
+                                    <button
+                                      onClick={() => handleDateSelect(null)}
+                                      className="w-full flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 hover:bg-[#333438] transition mt-1 border-t border-[#333438]"
+                                    >
+                                      <Ban className="h-3 w-3" /> Clear date
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="flex-1 p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold text-white">
+                                      {new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }}
+                                        className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white transition"
+                                      >
+                                        <ChevronLeft className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => { const n = new Date(); setCalMonth(n.getMonth()); setCalYear(n.getFullYear()); }}
+                                        className="px-1.5 py-0.5 text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
+                                      >
+                                        Today
+                                      </button>
+                                      <button
+                                        onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }}
+                                        className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white transition"
+                                      >
+                                        <ChevronRight className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-7 mb-1">
+                                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                                      <div key={d} className="text-center text-[10px] font-semibold text-[#555] py-1">{d}</div>
+                                    ))}
+                                  </div>
+                                  <div className="grid grid-cols-7">
+                                    {calDays.map((d, i) => {
+                                      const isToday = d.currentMonth && d.day === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear();
+                                      const isSel = d.currentMonth && selDate && d.day === selDate.getDate() && calMonth === selDate.getMonth() && calYear === selDate.getFullYear();
+                                      return (
+                                        <button
+                                          key={i}
+                                          onClick={() => d.currentMonth && handleDateSelect(new Date(calYear, calMonth, d.day))}
+                                          disabled={!d.currentMonth}
+                                          className={[
+                                            'h-7 w-7 mx-auto flex items-center justify-center text-[11px] rounded-full transition',
+                                            !d.currentMonth ? 'text-[#333438]' : 'text-[#e5e5e5] hover:bg-[#444]',
+                                            isToday ? 'bg-indigo-600 text-white font-bold' : '',
+                                            isSel && !isToday ? 'bg-indigo-500/30 text-indigo-300 font-bold ring-1 ring-indigo-500' : '',
+                                          ].join(' ')}
+                                        >
+                                          {d.day}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
                     ) : (
                       <span className="text-xs text-[#8a8c91]">
                         {dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Empty'}
