@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HistorySkeleton() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#1e1f21] p-6 md:p-8">
+    <div className="min-h-screen bg-background dark:bg-[color:var(--c-1e1f21)] p-6 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-8">
@@ -22,7 +22,7 @@ export default function HistorySkeleton() {
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}
-              className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-4 flex gap-4"
+              className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-4 flex gap-4"
             >
               {/* Avatar */}
               <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
@@ -35,7 +35,7 @@ export default function HistorySkeleton() {
                 </div>
 
                 {/* Change Details */}
-                <div className="pt-3 border-t border-border dark:border-[#333438] space-y-2">
+                <div className="pt-3 border-t border-border dark:border-[color:var(--c-333438)] space-y-2">
                   <Skeleton className="h-3 w-48" />
                   <Skeleton className="h-3 w-56" />
                 </div>

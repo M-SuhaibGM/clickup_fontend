@@ -7,7 +7,7 @@ import TaskCard from './TaskCard';
 import { Plus, Circle, CircleDashed, CheckCircle2 } from 'lucide-react';
 
 const COL_STYLES: Record<string, { icon: any, color: string, bg: string, text: string }> = {
-  TODO: { icon: Circle, color: 'text-[#8a8c91]', bg: 'bg-[#1e1f21]', text: 'TO DO' },
+  TODO: { icon: Circle, color: 'text-[color:var(--c-8a8c91)]', bg: 'bg-[color:var(--c-1e1f21)]', text: 'TO DO' },
   IN_PROGRESS: { icon: CircleDashed, color: 'text-blue-400', bg: 'bg-[#2c82f8]/10', text: 'IN PROGRESS' },
   DONE: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', text: 'COMPLETE' },
 };
@@ -20,13 +20,13 @@ export default function BoardColumn({ id, tasks, onTaskClick }: any) {
   return (
     <div className="w-full sm:w-[300px] shrink-0 flex flex-col gap-2">
       {/* Column Header */}
-      <div className={`flex items-center justify-between px-3 py-1.5 rounded-md border ${id === 'IN_PROGRESS' ? 'border-blue-500/30' : id === 'DONE' ? 'border-emerald-500/30' : 'border-[#333438]'}`}>
+      <div className={`flex items-center justify-between px-3 py-1.5 rounded-md border ${id === 'IN_PROGRESS' ? 'border-blue-500/30' : id === 'DONE' ? 'border-emerald-500/30' : 'border-[color:var(--c-333438)]'}`}>
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${style.color}`} />
           <h3 className={`text-[12px] font-bold ${style.color}`}>{style.text}</h3>
-          <span className="text-[11px] text-[#8a8c91]">{tasks.length}</span>
+          <span className="text-[11px] text-[color:var(--c-8a8c91)]">{tasks.length}</span>
         </div>
-        <button className="text-[#8a8c91] hover:text-white"><Plus className="h-4 w-4" /></button>
+        <button className="text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"><Plus className="h-4 w-4" /></button>
       </div>
 
       {/* Droppable Area */}

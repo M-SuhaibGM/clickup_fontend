@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProjectDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#1e1f21] p-6 md:p-8">
+    <div className="min-h-screen bg-background dark:bg-[color:var(--c-1e1f21)] p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-start gap-4 mb-8">
@@ -15,7 +15,7 @@ export default function ProjectDetailSkeleton() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 overflow-x-auto pb-2 border-b border-border dark:border-[#333438]">
+        <div className="flex gap-4 overflow-x-auto pb-2 border-b border-border dark:border-[color:var(--c-333438)]">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-24 rounded flex-shrink-0" />
           ))}
@@ -36,7 +36,7 @@ export default function ProjectDetailSkeleton() {
           {Array.from({ length: 3 }).map((col, colIdx) => (
             <div
               key={colIdx}
-              className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-4 space-y-3"
+              className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-4 space-y-3"
             >
               {/* Column Header */}
               <div className="flex items-center justify-between mb-4">
@@ -48,7 +48,7 @@ export default function ProjectDetailSkeleton() {
               {Array.from({ length: 3 }).map((_, cardIdx) => (
                 <div
                   key={cardIdx}
-                  className="bg-muted dark:bg-[#1e1f21] border border-border dark:border-[#333438] rounded-lg p-3 space-y-3"
+                  className="bg-muted dark:bg-[color:var(--c-1e1f21)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-3 space-y-3"
                 >
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-3 w-5/6" />

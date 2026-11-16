@@ -432,18 +432,18 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className="relative z-10 w-[95vw] max-w-[1100px] max-h-[88vh] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
+        className="relative z-10 w-[95vw] max-w-[1100px] max-h-[88vh] bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
       >
         {/* Top bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#333438] bg-[#232426] shrink-0">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[color:var(--c-333438)] bg-[color:var(--c-232426)] shrink-0">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a2b2e] border border-[#333438] rounded text-xs font-medium text-white">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-xs font-medium text-[color:var(--c-white)]">
               <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" />
               Task
-              <ChevronDown className="h-3 w-3 text-[#8a8c91]" />
+              <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />
             </div>
-            <div className="flex items-center gap-1 text-[#8a8c91]">
-              <button className="p-1 hover:bg-[#333438] rounded" title="Watchers">
+            <div className="flex items-center gap-1 text-[color:var(--c-8a8c91)]">
+              <button className="p-1 hover:bg-[color:var(--c-333438)] rounded" title="Watchers">
                 <Bell className="h-3.5 w-3.5" />
               </button>
               <span className="text-[11px]">1</span>
@@ -452,14 +452,14 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => router.push(`/tasks/${taskId}`)}
-              className="p-1.5 text-[#8a8c91] hover:text-white hover:bg-[#333438] rounded transition"
+              className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] rounded transition"
               title="Open full page"
             >
               <ArrowUpRight className="h-4 w-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-[#8a8c91] hover:text-white hover:bg-[#333438] rounded transition"
+              className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] rounded transition"
             >
               <X className="h-4 w-4" />
             </button>
@@ -473,7 +473,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
         ) : task ? (
           <div className="flex flex-1 overflow-hidden">
             {/* ───────── LEFT PANEL ───────── */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5 border-r border-[#333438]">
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 border-r border-[color:var(--c-333438)]">
               {/* Task Title */}
               <div>
                 {isAdmin ? (
@@ -482,11 +482,11 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                     onChange={(e) => setTitle(e.target.value)}
                     onBlur={handleTitleBlur}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-full text-xl font-bold text-white bg-transparent outline-none border-b-2 border-transparent focus:border-indigo-500 pb-1 transition"
+                    className="w-full text-xl font-bold text-[color:var(--c-white)] bg-transparent outline-none border-b-2 border-transparent focus:border-indigo-500 pb-1 transition"
                     placeholder="Task name"
                   />
                 ) : (
-                  <h2 className="text-xl font-bold text-white">{title}</h2>
+                  <h2 className="text-xl font-bold text-[color:var(--c-white)]">{title}</h2>
                 )}
               </div>
 
@@ -494,27 +494,27 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
               <div className="space-y-3">
                 {/* Status */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[#8a8c91] flex items-center gap-1.5">
+                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5" /> Status
                   </span>
                   <div className="relative" ref={statusRef}>
                     <button
                       onClick={() => isAdmin && setShowStatusDropdown(!showStatusDropdown)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a2b2e] border border-[#333438] rounded text-xs font-bold text-white hover:border-[#555] transition"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-xs font-bold text-[color:var(--c-white)] hover:border-[#555] transition"
                     >
                       <StatusIcon className="h-3.5 w-3.5" style={{ color: selectedStatus.color }} />
                       {selectedStatus.label}
-                      {isAdmin && <ChevronDown className="h-3 w-3 text-[#8a8c91]" />}
+                      {isAdmin && <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />}
                     </button>
                     {showStatusDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-xl z-20 py-1 w-44">
+                      <div className="absolute top-full left-0 mt-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-xl z-20 py-1 w-44">
                         {STATUSES.map(s => {
                           const Icon = s.icon;
                           return (
                             <button
                               key={s.value}
                               onClick={() => handleStatusChange(s.value)}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-white hover:bg-[#333438] transition"
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
                             >
                               <Icon className="h-3.5 w-3.5" style={{ color: s.color }} />
                               {s.label}
@@ -529,13 +529,13 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
 
                 {/* Assignees */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[#8a8c91] flex items-center gap-1.5">
+                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
                     <UserIcon className="h-3.5 w-3.5" /> Assignees
                   </span>
                   <div className="relative" ref={assigneeRef}>
                     <button
                       onClick={() => isAdmin && setShowAssigneeDropdown(!showAssigneeDropdown)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8a8c91] hover:text-white transition"
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
                     >
                       {selectedAssignee ? (
                         <span className="flex items-center gap-1.5">
@@ -546,7 +546,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                               {selectedAssignee.name?.[0]?.toUpperCase()}
                             </div>
                           )}
-                          <span className="text-white">{selectedAssignee.name}</span>
+                          <span className="text-[color:var(--c-white)]">{selectedAssignee.name}</span>
                         </span>
                       ) : (
                         <span>Empty</span>
@@ -554,18 +554,18 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                       {isAdmin && <ChevronDown className="h-3 w-3" />}
                     </button>
                     {showAssigneeDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-xl z-20 w-56 p-2">
+                      <div className="absolute top-full left-0 mt-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-xl z-20 w-56 p-2">
                         <input
                           autoFocus
                           value={assigneeSearch}
                           onChange={(e) => setAssigneeSearch(e.target.value)}
                           placeholder="Search..."
-                          className="w-full bg-[#1e1f21] border border-[#333438] rounded px-2 py-1 text-xs text-white outline-none mb-1.5"
+                          className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded px-2 py-1 text-xs text-[color:var(--c-white)] outline-none mb-1.5"
                         />
                         <div className="max-h-36 overflow-y-auto space-y-0.5">
                           <button
                             onClick={() => handleAssigneeChange('')}
-                            className="w-full text-left px-2 py-1.5 text-xs text-[#8a8c91] hover:bg-[#333438] hover:text-white rounded transition"
+                            className="w-full text-left px-2 py-1.5 text-xs text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-333438)] hover:text-[color:var(--c-white)] rounded transition"
                           >
                             Unassigned
                           </button>
@@ -573,7 +573,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                             <button
                               key={u.id}
                               onClick={() => handleAssigneeChange(u.id)}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-white hover:bg-[#333438] rounded transition"
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] rounded transition"
                             >
                               {u.avatar ? (
                                 <Image src={u.avatar} alt="" width={18} height={18} className="rounded-full" />
@@ -594,7 +594,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
 
                 {/* Dates */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[#8a8c91] flex items-center gap-1.5">
+                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5" /> Dates
                   </span>
                   <div className="relative" ref={dateRef}>
@@ -607,15 +607,15 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                             setCalYear(d.getFullYear());
                             setShowDateDropdown(!showDateDropdown);
                           }}
-                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8a8c91] hover:text-white transition"
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
                         >
                           <Calendar className="h-3.5 w-3.5" />
                           {dueDate ? (
-                            <span className="text-white">{new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            <span className="text-[color:var(--c-white)]">{new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           ) : (
                             <span>Empty</span>
                           )}
-                          <ChevronDown className="h-3 w-3 text-[#8a8c91]" />
+                          <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />
                         </button>
                         {showDateDropdown && (() => {
                           const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
@@ -624,31 +624,31 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                           const selDate = dueDate ? new Date(dueDate) : null;
                           if (selDate) selDate.setHours(0, 0, 0, 0);
                           return (
-                            <div className="absolute top-full left-0 mt-1 w-[460px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl z-30 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
-                              <div className="flex border-b border-[#333438]">
-                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-[#8a8c91] border-b-2 border-transparent">
+                            <div className="absolute top-full left-0 mt-1 w-[460px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl z-30 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+                              <div className="flex border-b border-[color:var(--c-333438)]">
+                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-[color:var(--c-8a8c91)] border-b-2 border-transparent">
                                   <Calendar className="h-3.5 w-3.5" /> Start date
                                 </button>
-                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-white font-semibold border-b-2 border-indigo-500">
+                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-[color:var(--c-white)] font-semibold border-b-2 border-indigo-500">
                                   <Calendar className="h-3.5 w-3.5" /> Due date
                                 </button>
                               </div>
                               <div className="flex">
-                                <div className="w-[190px] border-r border-[#333438] py-1">
+                                <div className="w-[190px] border-r border-[color:var(--c-333438)] py-1">
                                   {qDates.map(opt => (
                                     <button
                                       key={opt.label}
                                       onClick={() => handleDateSelect(opt.date)}
-                                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-white hover:bg-[#333438] transition"
+                                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
                                     >
                                       <span>{opt.label}</span>
-                                      <span className="text-[10px] text-[#8a8c91]">{opt.hint}</span>
+                                      <span className="text-[10px] text-[color:var(--c-8a8c91)]">{opt.hint}</span>
                                     </button>
                                   ))}
                                   {selDate && (
                                     <button
                                       onClick={() => handleDateSelect(null)}
-                                      className="w-full flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 hover:bg-[#333438] transition mt-1 border-t border-[#333438]"
+                                      className="w-full flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 hover:bg-[color:var(--c-333438)] transition mt-1 border-t border-[color:var(--c-333438)]"
                                     >
                                       <Ban className="h-3 w-3" /> Clear date
                                     </button>
@@ -656,13 +656,13 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                                 </div>
                                 <div className="flex-1 p-3">
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold text-white">
+                                    <span className="text-xs font-semibold text-[color:var(--c-white)]">
                                       {new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                                     </span>
                                     <div className="flex items-center gap-1">
                                       <button
                                         onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }}
-                                        className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white transition"
+                                        className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
                                       >
                                         <ChevronLeft className="h-3.5 w-3.5" />
                                       </button>
@@ -674,7 +674,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                                       </button>
                                       <button
                                         onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }}
-                                        className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white transition"
+                                        className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
                                       >
                                         <ChevronRight className="h-3.5 w-3.5" />
                                       </button>
@@ -696,7 +696,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                                           disabled={!d.currentMonth}
                                           className={[
                                             'h-7 w-7 mx-auto flex items-center justify-center text-[11px] rounded-full transition',
-                                            !d.currentMonth ? 'text-[#333438]' : 'text-[#e5e5e5] hover:bg-[#444]',
+                                            !d.currentMonth ? 'text-[color:var(--c-333438)]' : 'text-[color:var(--c-e5e5e5)] hover:bg-[#444]',
                                             isToday ? 'bg-indigo-600 text-white font-bold' : '',
                                             isSel && !isToday ? 'bg-indigo-500/30 text-indigo-300 font-bold ring-1 ring-indigo-500' : '',
                                           ].join(' ')}
@@ -713,7 +713,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                         })()}
                       </>
                     ) : (
-                      <span className="text-xs text-[#8a8c91]">
+                      <span className="text-xs text-[color:var(--c-8a8c91)]">
                         {dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Empty'}
                       </span>
                     )}
@@ -722,26 +722,26 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
 
                 {/* Priority */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[#8a8c91] flex items-center gap-1.5">
+                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
                     <Flag className="h-3.5 w-3.5" /> Priority
                   </span>
                   <div className="relative" ref={priorityRef}>
                     <button
                       onClick={() => isAdmin && setShowPriorityDropdown(!showPriorityDropdown)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs hover:text-white transition"
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs hover:text-[color:var(--c-white)] transition"
                       style={{ color: selectedPriority.color }}
                     >
                       <Flag className="h-3.5 w-3.5" />
                       {selectedPriority.label}
-                      {isAdmin && <ChevronDown className="h-3 w-3 text-[#8a8c91]" />}
+                      {isAdmin && <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />}
                     </button>
                     {showPriorityDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-xl z-20 py-1 w-36">
+                      <div className="absolute top-full left-0 mt-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-xl z-20 py-1 w-36">
                         {PRIORITIES.map(p => (
                           <button
                             key={p.value}
                             onClick={() => handlePriorityChange(p.value)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[#333438] transition"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[color:var(--c-333438)] transition"
                             style={{ color: p.color }}
                           >
                             <Flag className="h-3.5 w-3.5" />
@@ -756,10 +756,10 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
 
                 {/* Tags */}
                 <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[#8a8c91] flex items-center gap-1.5">
+                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
                     <Tag className="h-3.5 w-3.5" /> Tags
                   </span>
-                  <span className="text-xs text-[#8a8c91]">Empty</span>
+                  <span className="text-xs text-[color:var(--c-8a8c91)]">Empty</span>
                 </div>
               </div>
 
@@ -772,10 +772,10 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                     onBlur={handleDescriptionBlur}
                     placeholder="Add a description..."
                     rows={3}
-                    className="w-full bg-transparent border border-transparent hover:border-[#333438] focus:border-indigo-500 rounded-lg p-3 text-sm text-[#e5e5e5] outline-none resize-none transition placeholder:text-[#555]"
+                    className="w-full bg-transparent border border-transparent hover:border-[color:var(--c-333438)] focus:border-indigo-500 rounded-lg p-3 text-sm text-[color:var(--c-e5e5e5)] outline-none resize-none transition placeholder:text-[#555]"
                   />
                 ) : (
-                  <p className="text-sm text-[#e5e5e5] whitespace-pre-wrap">
+                  <p className="text-sm text-[color:var(--c-e5e5e5)] whitespace-pre-wrap">
                     {description || <span className="text-[#555] italic">No description</span>}
                   </p>
                 )}
@@ -785,7 +785,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
               <div className="space-y-2">
                 <button
                   onClick={() => setShowAttachments(!showAttachments)}
-                  className="flex items-center gap-2 text-xs font-semibold text-[#8a8c91] hover:text-white transition"
+                  className="flex items-center gap-2 text-xs font-semibold text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
                 >
                   <Paperclip className="h-3.5 w-3.5" />
                   Attachments {attachments.length > 0 && `(${attachments.length})`}
@@ -796,13 +796,13 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                     {attachments.map((url, i) => {
                       const filename = url.split('/').pop()?.split('-').pop() || 'File';
                       return (
-                        <div key={i} className="flex items-center justify-between bg-[#232426] border border-[#333438] p-2 rounded group">
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[#e5e5e5] hover:text-indigo-400 truncate flex-1">
-                            <FileText className="h-3.5 w-3.5 text-[#8a8c91] shrink-0" />
+                        <div key={i} className="flex items-center justify-between bg-[color:var(--c-232426)] border border-[color:var(--c-333438)] p-2 rounded group">
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[color:var(--c-e5e5e5)] hover:text-indigo-400 truncate flex-1">
+                            <FileText className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] shrink-0" />
                             <span className="truncate">{filename}</span>
                           </a>
                           {isAdmin && (
-                            <button onClick={() => handleRemoveFile(url)} className="text-[#8a8c91] hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition">
+                            <button onClick={() => handleRemoveFile(url)} className="text-[color:var(--c-8a8c91)] hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition">
                               <X className="h-3 w-3" />
                             </button>
                           )}
@@ -810,7 +810,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                       );
                     })}
                     {isAdmin && (
-                      <div className="rounded-lg border border-dashed border-[#333438] bg-[#232426]/50">
+                      <div className="rounded-lg border border-dashed border-[color:var(--c-333438)] bg-[color:var(--c-232426)]/50">
                         <UploadDropzone
                           endpoint="taskAttachment"
                           onClientUploadComplete={(res) => {
@@ -820,7 +820,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                           appearance={{
                             container: 'border-0 bg-transparent p-2',
                             button: 'bg-indigo-600 text-white text-xs h-7 px-3 rounded after:bg-indigo-700 ut-uploading:bg-indigo-700/50',
-                            label: 'text-xs text-[#8a8c91] hover:text-indigo-400',
+                            label: 'text-xs text-[color:var(--c-8a8c91)] hover:text-indigo-400',
                             allowedContent: 'text-[10px] text-[#555] mt-1',
                           }}
                         />
@@ -831,23 +831,23 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
               </div>
 
               {/* Subtasks */}
-              <div className="space-y-2 border-t border-[#333438] pt-4">
+              <div className="space-y-2 border-t border-[color:var(--c-333438)] pt-4">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setSubtasksOpen(!subtasksOpen)}
-                    className="flex items-center gap-2 text-xs font-bold text-[#e5e5e5]"
+                    className="flex items-center gap-2 text-xs font-bold text-[color:var(--c-e5e5e5)]"
                   >
                     {subtasksOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                     <ListTodo className="h-3.5 w-3.5 text-indigo-400" />
                     Subtasks
                     {totalSubtasks > 0 && (
-                      <span className="text-[10px] text-[#8a8c91] font-normal ml-1">
+                      <span className="text-[10px] text-[color:var(--c-8a8c91)] font-normal ml-1">
                         {completedSubtasks} / {totalSubtasks} done
                       </span>
                     )}
                   </button>
                   {totalSubtasks > 0 && (
-                    <div className="w-20 h-1.5 bg-[#333438] rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-[color:var(--c-333438)] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-indigo-500 rounded-full transition-all"
                         style={{ width: `${totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0}%` }}
@@ -867,7 +867,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                       </div>
                     )}
                     {task?.subtasks?.map(st => (
-                      <div key={st.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#232426] rounded transition group">
+                      <div key={st.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[color:var(--c-232426)] rounded transition group">
                         <input
                           type="checkbox"
                           checked={st.status === 'DONE'}
@@ -875,7 +875,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                           disabled={!isAdmin}
                           className={`h-3.5 w-3.5 rounded border-[#555] accent-indigo-500 ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-60'}`}
                         />
-                        <span className={`text-xs flex-1 truncate ${st.status === 'DONE' ? 'line-through text-[#555]' : 'text-[#e5e5e5]'}`}>
+                        <span className={`text-xs flex-1 truncate ${st.status === 'DONE' ? 'line-through text-[#555]' : 'text-[color:var(--c-e5e5e5)]'}`}>
                           {st.title}
                         </span>
                         {isAdmin && (
@@ -897,7 +897,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); }}
                           placeholder="Add subtask..."
                           disabled={addingSubtask}
-                          className="flex-1 bg-transparent border-b border-[#333438] focus:border-indigo-500 text-xs text-white outline-none py-1.5 px-1 placeholder:text-[#555] transition"
+                          className="flex-1 bg-transparent border-b border-[color:var(--c-333438)] focus:border-indigo-500 text-xs text-[color:var(--c-white)] outline-none py-1.5 px-1 placeholder:text-[#555] transition"
                         />
                         <button
                           onClick={handleAddSubtask}
@@ -914,7 +914,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
 
               {/* Delete Task (admin only) */}
               {isAdmin && (
-                <div className="pt-4 border-t border-[#333438]">
+                <div className="pt-4 border-t border-[color:var(--c-333438)]">
                   <button
                     onClick={handleDeleteTask}
                     className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition"
@@ -926,13 +926,13 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
             </div>
 
             {/* ───────── RIGHT PANEL (Comments) ───────── */}
-            <div className="w-[340px] shrink-0 flex flex-col bg-[#232426] overflow-hidden">
+            <div className="w-[340px] shrink-0 flex flex-col bg-[color:var(--c-232426)] overflow-hidden">
               {/* Comments header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#333438]">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--c-333438)]">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-white">Comments</span>
+                  <span className="text-xs font-semibold text-[color:var(--c-white)]">Comments</span>
                 </div>
-                <div className="flex items-center gap-2 text-[#8a8c91]">
+                <div className="flex items-center gap-2 text-[color:var(--c-8a8c91)]">
                   <span className="text-[11px]">Created {createdDate}</span>
                   <Search className="h-3.5 w-3.5" />
                   <Bell className="h-3.5 w-3.5" />
@@ -944,9 +944,9 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {(!task.comments || task.comments.length === 0) ? (
                   <div className="text-center py-8 space-y-3">
-                    <MessageSquare className="h-8 w-8 text-[#333438] mx-auto" />
-                    <p className="text-sm font-semibold text-white">Send the first comment</p>
-                    <p className="text-xs text-[#8a8c91]">Ask a question, share an update, or loop someone in.</p>
+                    <MessageSquare className="h-8 w-8 text-[color:var(--c-333438)] mx-auto" />
+                    <p className="text-sm font-semibold text-[color:var(--c-white)]">Send the first comment</p>
+                    <p className="text-xs text-[color:var(--c-8a8c91)]">Ask a question, share an update, or loop someone in.</p>
                   </div>
                 ) : (
                   task.comments.map(comment => {
@@ -956,7 +956,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                       <div key={comment.id} className="group">
                         <div className="flex items-start gap-2.5">
                           {comment.user.avatar ? (
-                            <Image src={comment.user.avatar} alt="" width={28} height={28} className="rounded-full border border-[#333438] shrink-0" referrerPolicy="no-referrer" />
+                            <Image src={comment.user.avatar} alt="" width={28} height={28} className="rounded-full border border-[color:var(--c-333438)] shrink-0" referrerPolicy="no-referrer" />
                           ) : (
                             <div className="h-7 w-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                               {comment.user.name?.[0]?.toUpperCase()}
@@ -964,7 +964,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-xs font-semibold text-white">{comment.user.name}</span>
+                              <span className="text-xs font-semibold text-[color:var(--c-white)]">{comment.user.name}</span>
                               <span className="text-[10px] text-[#555]">
                                 {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
@@ -972,13 +972,13 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                                 <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 ml-auto transition">
                                   <button
                                     onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.text); }}
-                                    className="p-0.5 text-[#8a8c91] hover:text-white"
+                                    className="p-0.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
                                   >
                                     <Pencil className="h-3 w-3" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteComment(comment.id)}
-                                    className="p-0.5 text-[#8a8c91] hover:text-red-400"
+                                    className="p-0.5 text-[color:var(--c-8a8c91)] hover:text-red-400"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -990,12 +990,12 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                                 <textarea
                                   value={editCommentText}
                                   onChange={(e) => setEditCommentText(e.target.value)}
-                                  className="w-full bg-[#1e1f21] border border-[#333438] rounded p-2 text-xs text-white outline-none resize-none"
+                                  className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded p-2 text-xs text-[color:var(--c-white)] outline-none resize-none"
                                   rows={2}
                                 />
                                 <div className="flex gap-1.5">
                                   <button onClick={() => handleEditComment(comment.id)} className="text-[10px] font-semibold text-white bg-indigo-600 px-2 py-0.5 rounded">Save</button>
-                                  <button onClick={() => setEditingCommentId(null)} className="text-[10px] font-semibold text-[#8a8c91] px-2 py-0.5 rounded hover:text-white">Cancel</button>
+                                  <button onClick={() => setEditingCommentId(null)} className="text-[10px] font-semibold text-[color:var(--c-8a8c91)] px-2 py-0.5 rounded hover:text-[color:var(--c-white)]">Cancel</button>
                                 </div>
                               </div>
                             ) : (
@@ -1010,11 +1010,11 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
               </div>
 
               {/* Comment input */}
-              <div className="border-t border-[#333438] p-3">
+              <div className="border-t border-[color:var(--c-333438)] p-3">
                 {isAdmin ? (
                   <>
-                    <div className="flex items-center gap-2 text-[11px] text-[#8a8c91] mb-2 px-1">
-                      <button className="font-semibold text-white border-b border-indigo-500 pb-0.5">Comment</button>
+                    <div className="flex items-center gap-2 text-[11px] text-[color:var(--c-8a8c91)] mb-2 px-1">
+                      <button className="font-semibold text-[color:var(--c-white)] border-b border-indigo-500 pb-0.5">Comment</button>
                     </div>
                     <div className="relative">
                       <textarea
@@ -1029,7 +1029,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                         }}
                         placeholder="Write a comment..."
                         rows={2}
-                        className="w-full bg-[#1e1f21] border border-[#333438] rounded-lg p-2.5 pr-10 text-xs text-white outline-none resize-none focus:border-indigo-500 placeholder:text-[#555] transition"
+                        className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded-lg p-2.5 pr-10 text-xs text-[color:var(--c-white)] outline-none resize-none focus:border-indigo-500 placeholder:text-[#555] transition"
                       />
                       <button
                         onClick={handleAddComment}
@@ -1054,16 +1054,16 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
             <div className="absolute inset-0 bg-black/50 rounded-xl" />
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative z-10 w-[380px] bg-[#232426] border border-[#333438] rounded-xl shadow-2xl p-5 space-y-4 animate-in fade-in-0 zoom-in-95 duration-150"
+              className="relative z-10 w-[380px] bg-[color:var(--c-232426)] border border-[color:var(--c-333438)] rounded-xl shadow-2xl p-5 space-y-4 animate-in fade-in-0 zoom-in-95 duration-150"
             >
               <div className="space-y-1.5">
-                <h3 className="text-sm font-bold text-white">{confirmDialog.title}</h3>
-                <p className="text-xs text-[#8a8c91] leading-relaxed">{confirmDialog.message}</p>
+                <h3 className="text-sm font-bold text-[color:var(--c-white)]">{confirmDialog.title}</h3>
+                <p className="text-xs text-[color:var(--c-8a8c91)] leading-relaxed">{confirmDialog.message}</p>
               </div>
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   onClick={() => setConfirmDialog(null)}
-                  className="px-3 py-1.5 text-xs font-medium text-[#8a8c91] hover:text-white bg-[#2a2b2e] border border-[#333438] rounded-lg hover:border-[#555] transition"
+                  className="px-3 py-1.5 text-xs font-medium text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg hover:border-[#555] transition"
                 >
                   Cancel
                 </button>

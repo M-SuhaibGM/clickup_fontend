@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MembersSkeleton() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#1e1f21] p-6 md:p-8">
+    <div className="min-h-screen bg-background dark:bg-[color:var(--c-1e1f21)] p-6 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -20,9 +20,9 @@ export default function MembersSkeleton() {
         </div>
 
         {/* Members Table */}
-        <div className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg overflow-hidden">
+        <div className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg overflow-hidden">
           {/* Table Header */}
-          <div className="bg-muted dark:bg-[#1e1f21] border-b border-border dark:border-[#333438] px-6 py-3 flex items-center gap-4">
+          <div className="bg-muted dark:bg-[color:var(--c-1e1f21)] border-b border-border dark:border-[color:var(--c-333438)] px-6 py-3 flex items-center gap-4">
             <Skeleton className="h-4 w-4" />
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-4 w-20 flex-1" />
@@ -33,7 +33,7 @@ export default function MembersSkeleton() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="border-b border-border dark:border-[#333438] px-6 py-4 flex items-center gap-4"
+              className="border-b border-border dark:border-[color:var(--c-333438)] px-6 py-4 flex items-center gap-4"
             >
               <Skeleton className="h-4 w-4" />
               <div className="flex-1 flex items-center gap-3">

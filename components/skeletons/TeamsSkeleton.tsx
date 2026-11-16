@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeamsSkeleton() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#1e1f21] p-6 md:p-8">
+    <div className="min-h-screen bg-background dark:bg-[color:var(--c-1e1f21)] p-6 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -18,7 +18,7 @@ export default function TeamsSkeleton() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-6 space-y-4"
+              className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-6 space-y-4"
             >
               {/* Team Icon */}
               <Skeleton className="h-12 w-12 rounded-lg" />
@@ -33,7 +33,7 @@ export default function TeamsSkeleton() {
               </div>
 
               {/* Members */}
-              <div className="pt-4 border-t border-border dark:border-[#333438]">
+              <div className="pt-4 border-t border-border dark:border-[color:var(--c-333438)]">
                 <Skeleton className="h-4 w-20 mb-3" />
                 <div className="flex gap-2">
                   {Array.from({ length: 4 }).map((_, j) => (

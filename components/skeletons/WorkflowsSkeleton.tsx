@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function WorkflowsSkeleton() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#1e1f21] p-6 md:p-8">
+    <div className="min-h-screen bg-background dark:bg-[color:var(--c-1e1f21)] p-6 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -18,7 +18,7 @@ export default function WorkflowsSkeleton() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-6 space-y-4"
+              className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-6 space-y-4"
             >
               {/* Header */}
               <div className="flex items-start justify-between">
@@ -36,7 +36,7 @@ export default function WorkflowsSkeleton() {
               </div>
 
               {/* Status & Stats */}
-              <div className="bg-muted dark:bg-[#1e1f21] rounded-lg p-3 space-y-2">
+              <div className="bg-muted dark:bg-[color:var(--c-1e1f21)] rounded-lg p-3 space-y-2">
                 <Skeleton className="h-3 w-16" />
                 <div className="flex justify-between">
                   <Skeleton className="h-4 w-20" />

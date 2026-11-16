@@ -298,15 +298,15 @@ export default function ProjectDetailClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1e1f21] text-[#e5e5e5] p-3 sm:p-6 max-w-[100vw] overflow-x-hidden space-y-4">
+    <div className="min-h-screen bg-[color:var(--c-1e1f21)] text-[color:var(--c-e5e5e5)] p-3 sm:p-6 max-w-[100vw] overflow-x-hidden space-y-4">
       <SocketProvider projectId={id} />
 
       {/* Top Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#333438] pb-3">
-        <div className="flex items-center gap-2 text-sm text-[#8a8c91]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[color:var(--c-333438)] pb-3">
+        <div className="flex items-center gap-2 text-sm text-[color:var(--c-8a8c91)]">
           <span>Team Space</span>
           <span>/</span>
-          <div className="flex items-center gap-1.5 text-white font-semibold">
+          <div className="flex items-center gap-1.5 text-[color:var(--c-white)] font-semibold">
             <FolderKanban className="h-4 w-4 text-indigo-400" />
             <span>{project.name}</span>
           </div>
@@ -321,11 +321,11 @@ export default function ProjectDetailClient() {
               <Sparkles className="h-3.5 w-3.5" /> AI Plan
             </button>
           )}
-          <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md border border-[#333438] bg-[#232426] hover:bg-[#2a2b2e] transition text-[#e5e5e5]">
+          <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] hover:bg-[color:var(--c-2a2b2e)] transition text-[color:var(--c-e5e5e5)]">
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
           {isAdmin && (
-            <button onClick={() => setShowSettings(true)} className="p-1.5 text-[#8a8c91] hover:text-white rounded-md border border-[#333438] bg-[#232426] transition">
+            <button onClick={() => setShowSettings(true)} className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] rounded-md border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] transition">
               <Settings className="h-4 w-4" />
             </button>
           )}
@@ -333,44 +333,44 @@ export default function ProjectDetailClient() {
       </div>
 
       {/* View Navigation Tabs (ClickUp Style) */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-[#333438] pb-2 text-xs">
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--c-333438)] pb-2 text-xs">
         <button
           onClick={() => setActiveTab('channel')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'channel' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'channel' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <Hash className="h-3.5 w-3.5 text-indigo-400" /> Channel
         </button>
         <button
           onClick={() => setActiveTab('list')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'list' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'list' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <ListIcon className="h-3.5 w-3.5 text-indigo-400" /> List
         </button>
         <button
           onClick={() => setActiveTab('board')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'board' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'board' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <LayoutGrid className="h-3.5 w-3.5 text-blue-400" /> Board
         </button>
         <button
           onClick={() => setActiveTab('calendar')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'calendar' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'calendar' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <CalendarIcon className="h-3.5 w-3.5 text-orange-400" /> Calendar
         </button>
         <button
           onClick={() => setActiveTab('gantt')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'gantt' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'gantt' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <GanttChart className="h-3.5 w-3.5 text-red-400" /> Gantt
         </button>
         <button
           onClick={() => setActiveTab('table')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'table' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'table' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <TableIcon className="h-3.5 w-3.5 text-emerald-400" /> Table
         </button>
-        <button className="flex items-center gap-1 px-3 py-1.5 text-[#8a8c91] hover:text-white font-medium transition">
+        <button className="flex items-center gap-1 px-3 py-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] font-medium transition">
           <Plus className="h-3.5 w-3.5" /> View
         </button>
       </div>
@@ -388,14 +388,14 @@ export default function ProjectDetailClient() {
         {isAdmin && (
           adding ? (
             <div className="flex items-center gap-1.5 pl-1">
-              <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddList(); if (e.key === 'Escape') { setAdding(false); setNewName(''); } }} placeholder="List name..." disabled={savingList} className="h-7 rounded border border-[#333438] bg-[#232426] px-2 text-xs outline-none text-white focus:border-indigo-500" />
+              <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddList(); if (e.key === 'Escape') { setAdding(false); setNewName(''); } }} placeholder="List name..." disabled={savingList} className="h-7 rounded border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] px-2 text-xs outline-none text-[color:var(--c-white)] focus:border-indigo-500" />
               <button onClick={handleAddList} disabled={savingList || !newName.trim()} className="h-7 bg-indigo-600 text-white px-2.5 rounded text-xs hover:bg-indigo-500 disabled:opacity-50">
                 {savingList ? 'Adding…' : 'Add'}
               </button>
-              <button onClick={() => { setAdding(false); setNewName(''); }} className="p-1 text-[#8a8c91] hover:text-white"><X className="h-3.5 w-3.5" /></button>
+              <button onClick={() => { setAdding(false); setNewName(''); }} className="p-1 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"><X className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
-            <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium text-[#8a8c91] hover:bg-[#2a2b2e] transition border border-dashed border-[#333438]">
+            <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-2a2b2e)] transition border border-dashed border-[color:var(--c-333438)]">
               <Plus className="h-3.5 w-3.5" /> New List
             </button>
           )
@@ -412,13 +412,13 @@ export default function ProjectDetailClient() {
           <BoardView listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
         </div>
       ) : activeTab === 'channel' ? (
-        <div className="p-8 text-center text-[#8a8c91] bg-[#232426] rounded-lg border border-[#333438]">
-          <p className="text-sm font-semibold text-white">Project Chat & Channel Feed</p>
+        <div className="p-8 text-center text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] rounded-lg border border-[color:var(--c-333438)]">
+          <p className="text-sm font-semibold text-[color:var(--c-white)]">Project Chat & Channel Feed</p>
           <p className="text-xs mt-1">Real-time team communication for this project space.</p>
         </div>
       ) : (
-        <div className="p-12 text-center text-[#8a8c91] bg-[#232426] rounded-lg border border-[#333438]">
-          <p className="text-sm font-semibold text-white">Coming Soon</p>
+        <div className="p-12 text-center text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] rounded-lg border border-[color:var(--c-333438)]">
+          <p className="text-sm font-semibold text-[color:var(--c-white)]">Coming Soon</p>
           <p className="text-xs mt-1">The {activeTab} view is currently under development.</p>
         </div>
       )}
@@ -443,13 +443,13 @@ export default function ProjectDetailClient() {
       />
 
       <AlertDialog open={!!listToDelete} onOpenChange={(open) => { if (!open && !deleting) setListToDelete(null); }}>
-        <AlertDialogContent className="bg-[#232426] border-[#333438] text-white">
+        <AlertDialogContent className="bg-[color:var(--c-232426)] border-[color:var(--c-333438)] text-[color:var(--c-white)]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete list</AlertDialogTitle>
-            <AlertDialogDescription className="text-[#8a8c91]">Are you sure you want to delete <span className="font-semibold text-white">"{listToDelete?.name}"</span>? All tasks inside will be permanently removed.</AlertDialogDescription>
+            <AlertDialogDescription className="text-[color:var(--c-8a8c91)]">Are you sure you want to delete <span className="font-semibold text-[color:var(--c-white)]">"{listToDelete?.name}"</span>? All tasks inside will be permanently removed.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting} className="bg-[#2a2b2e] text-white border-[#333438] hover:bg-[#333438]">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting} className="bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)] border-[color:var(--c-333438)] hover:bg-[color:var(--c-333438)]">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDeleteList(); }} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">{deleting ? 'Deleting…' : 'Delete'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

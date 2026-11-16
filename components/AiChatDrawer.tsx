@@ -64,23 +64,23 @@ export default function AiChatDrawer({
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-[420px] bg-[#1e1f21] border-l border-[#333438] z-[70] flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-[420px] bg-[color:var(--c-1e1f21)] border-l border-[color:var(--c-333438)] z-[70] flex flex-col transition-transform duration-300 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 h-12 border-b border-[#333438] shrink-0">
+        <div className="flex items-center justify-between px-4 h-12 border-b border-[color:var(--c-333438)] shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
+              <Sparkles className="h-4 w-4 text-[color:var(--c-white)]" />
             </div>
-            <span className="text-[14px] font-semibold text-white">AI Chat</span>
+            <span className="text-[14px] font-semibold text-[color:var(--c-white)]">AI Chat</span>
           </div>
           <div className="flex items-center gap-1">
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
-                className="p-1.5 text-[#8a8c91] hover:text-white hover:bg-[#2a2b2e] rounded transition"
+                className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded transition"
                 title="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />
@@ -88,7 +88,7 @@ export default function AiChatDrawer({
             )}
             <button
               onClick={onClose}
-              className="p-1.5 text-[#8a8c91] hover:text-white hover:bg-[#2a2b2e] rounded transition"
+              className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded transition"
             >
               <X className="h-4 w-4" />
             </button>
@@ -102,10 +102,10 @@ export default function AiChatDrawer({
               <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center mb-4">
                 <Bot className="h-7 w-7 text-indigo-400" />
               </div>
-              <h3 className="text-[15px] font-semibold text-white mb-1">
+              <h3 className="text-[15px] font-semibold text-[color:var(--c-white)] mb-1">
                 ClickUp AI Assistant
               </h3>
-              <p className="text-[12px] text-[#8a8c91] mb-6 max-w-[280px]">
+              <p className="text-[12px] text-[color:var(--c-8a8c91)] mb-6 max-w-[280px]">
                 Ask me anything about your tasks, projects, or let me help you
                 draft content.
               </p>
@@ -114,7 +114,7 @@ export default function AiChatDrawer({
                   <button
                     key={s}
                     onClick={() => send(s)}
-                    className="w-full text-left px-3 py-2.5 rounded-lg border border-[#333438] bg-[#2a2b2e] hover:bg-[#333438] text-[12px] text-[#c4c4c4] hover:text-white transition"
+                    className="w-full text-left px-3 py-2.5 rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] hover:bg-[color:var(--c-333438)] text-[12px] text-[#c4c4c4] hover:text-[color:var(--c-white)] transition"
                   >
                     {s}
                   </button>
@@ -131,23 +131,23 @@ export default function AiChatDrawer({
               >
                 {msg.role === 'assistant' && (
                   <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="h-3.5 w-3.5 text-white" />
+                    <Bot className="h-3.5 w-3.5 text-[color:var(--c-white)]" />
                   </div>
                 )}
                 <div
                   className={`max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-[#2c82f8] text-white rounded-br-sm'
+                      ? 'bg-primary text-white rounded-br-sm'
                       : msg.error
                         ? 'bg-red-500/10 text-red-300 border border-red-500/30 rounded-bl-sm'
-                        : 'bg-[#2a2b2e] text-[#e5e5e5] border border-[#333438] rounded-bl-sm'
+                        : 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-e5e5e5)] border border-[color:var(--c-333438)] rounded-bl-sm'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
                 {msg.role === 'user' && (
                   <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <User className="h-3.5 w-3.5 text-white" />
+                    <User className="h-3.5 w-3.5 text-[color:var(--c-white)]" />
                   </div>
                 )}
               </div>
@@ -157,13 +157,13 @@ export default function AiChatDrawer({
           {loading && (
             <div className="flex gap-2.5">
               <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shrink-0">
-                <Bot className="h-3.5 w-3.5 text-white" />
+                <Bot className="h-3.5 w-3.5 text-[color:var(--c-white)]" />
               </div>
-              <div className="bg-[#2a2b2e] border border-[#333438] rounded-xl rounded-bl-sm px-3 py-2">
+              <div className="bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-xl rounded-bl-sm px-3 py-2">
                 <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-2 rounded-full bg-[#8a8c91] animate-bounce [animation-delay:0ms]" />
-                  <div className="h-2 w-2 rounded-full bg-[#8a8c91] animate-bounce [animation-delay:150ms]" />
-                  <div className="h-2 w-2 rounded-full bg-[#8a8c91] animate-bounce [animation-delay:300ms]" />
+                  <div className="h-2 w-2 rounded-full bg-[color:var(--c-8a8c91)] animate-bounce [animation-delay:0ms]" />
+                  <div className="h-2 w-2 rounded-full bg-[color:var(--c-8a8c91)] animate-bounce [animation-delay:150ms]" />
+                  <div className="h-2 w-2 rounded-full bg-[color:var(--c-8a8c91)] animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             </div>
@@ -173,8 +173,8 @@ export default function AiChatDrawer({
         </div>
 
         {/* Input */}
-        <div className="shrink-0 border-t border-[#333438] p-3">
-          <div className="flex items-end gap-2 bg-[#2a2b2e] border border-[#333438] rounded-xl px-3 py-2 focus-within:border-[#2c82f8] transition-colors">
+        <div className="shrink-0 border-t border-[color:var(--c-333438)] p-3">
+          <div className="flex items-end gap-2 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-xl px-3 py-2 focus-within:border-primary transition-colors">
             <textarea
               ref={inputRef}
               value={input}
@@ -187,7 +187,7 @@ export default function AiChatDrawer({
               }}
               placeholder="Ask AI anything…"
               rows={1}
-              className="flex-1 bg-transparent text-[13px] text-white placeholder-[#8a8c91] outline-none resize-none max-h-[120px] leading-relaxed"
+              className="flex-1 bg-transparent text-[13px] text-[color:var(--c-white)] placeholder-[color:var(--c-8a8c91)] outline-none resize-none max-h-[120px] leading-relaxed"
               style={{ minHeight: '24px' }}
               onInput={(e) => {
                 const el = e.currentTarget;
@@ -198,7 +198,7 @@ export default function AiChatDrawer({
             <button
               onClick={sendMessage}
               disabled={!input.trim() || loading}
-              className="p-1.5 rounded-lg bg-[#2c82f8] text-white hover:bg-[#2570d4] disabled:opacity-40 disabled:cursor-not-allowed transition shrink-0"
+              className="p-1.5 rounded-lg bg-primary text-white hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition shrink-0"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -207,7 +207,7 @@ export default function AiChatDrawer({
               )}
             </button>
           </div>
-          <p className="text-[10px] text-[#8a8c91] mt-1.5 text-center">
+          <p className="text-[10px] text-[color:var(--c-8a8c91)] mt-1.5 text-center">
             AI may make mistakes. Verify important information.
           </p>
         </div>

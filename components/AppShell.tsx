@@ -96,7 +96,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [isDragging, onMouseMove, stopDragging]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#1e1f21] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[color:var(--c-1e1f21)] overflow-hidden">
       
       <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} onAiChatClick={() => setIsAiChatOpen(true)} />
 
@@ -128,10 +128,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Main Content Area */}
-        <main className={`flex-1 overflow-y-auto relative bg-[#1e1f21] border border-[#333438] ${isSidebarOpen ? 'rounded-r-lg' : 'rounded-lg'}`}>
+        <main className={`flex-1 overflow-y-auto relative bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] ${isSidebarOpen ? 'rounded-r-lg' : 'rounded-lg'}`}>
           {children}
           {!ready && (
-            <div className="absolute inset-0 z-10 bg-[#1e1f21] rounded-lg">
+            <div className="absolute inset-0 z-10 bg-[color:var(--c-1e1f21)] rounded-lg">
               <AppShellSkeleton />
             </div>
           )}

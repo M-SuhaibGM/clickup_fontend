@@ -175,17 +175,17 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="w-full bg-[#1e1f21] rounded-lg border border-[#333438] overflow-hidden">
+      <div className="w-full bg-[color:var(--c-1e1f21)] rounded-lg border border-[color:var(--c-333438)] overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between px-3 py-2 bg-[#232426] border-b border-[#333438] gap-2">
+        <div className="flex flex-wrap items-center justify-between px-3 py-2 bg-[color:var(--c-232426)] border-b border-[color:var(--c-333438)] gap-2">
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a2b2e] border border-[#333438] rounded text-xs font-medium text-white">
+            <button className="flex items-center gap-1.5 px-2.5 py-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-xs font-medium text-[color:var(--c-white)]">
               <SlidersHorizontal className="h-3.5 w-3.5 text-indigo-400" /> Group: Status
             </button>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <button className="flex items-center gap-1 px-2.5 py-1 bg-[#2a2b2e] border border-[#333438] rounded text-[#8a8c91] hover:text-white">
+            <button className="flex items-center gap-1 px-2.5 py-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">
               <Filter className="h-3 w-3" /> Filter
             </button>
             {isAdmin && (
@@ -199,7 +199,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
         {/* Table */}
         <div className="w-full overflow-x-auto">
           <div className="min-w-[800px]">
-          <div className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#8a8c91] border-b border-[#333438]">
+          <div className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[color:var(--c-8a8c91)] border-b border-[color:var(--c-333438)]">
             <div>Name</div>
             <div>Assignee</div>
             <div>Due date</div>
@@ -215,14 +215,14 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
                 <button
                   type="button"
                   onClick={() => setCollapsedGroups((prev) => ({ ...prev, [status]: !prev[status] }))}
-                  className="flex items-center justify-between w-full px-3 py-1.5 bg-[#232426]/60 border-b border-[#333438] cursor-pointer select-none"
+                  className="flex items-center justify-between w-full px-3 py-1.5 bg-[color:var(--c-232426)]/60 border-b border-[color:var(--c-333438)] cursor-pointer select-none"
                 >
                   <div className="flex items-center gap-2">
-                    <ChevronDown className={`h-3.5 w-3.5 text-[#8a8c91] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
-                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[#2a2b2e] border border-[#333438] rounded text-[11px] font-bold text-white">
+                    <ChevronDown className={`h-3.5 w-3.5 text-[color:var(--c-8a8c91)] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-[11px] font-bold text-[color:var(--c-white)]">
                       <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block"></span> {status.replace('_', ' ')}
                     </span>
-                    <span className="text-[11px] text-[#8a8c91]">{groupTasks.length}</span>
+                    <span className="text-[11px] text-[color:var(--c-8a8c91)]">{groupTasks.length}</span>
                   </div>
                 </button>
 
@@ -235,7 +235,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
                     </SortableContext>
 
                     {groupTasks.length === 0 && (
-                      <div className="px-3 py-4 text-center text-xs text-[#8a8c91]">
+                      <div className="px-3 py-4 text-center text-xs text-[color:var(--c-8a8c91)]">
                         Drop tasks here
                       </div>
                     )}
@@ -246,14 +246,14 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
           })}
 
           {isAdmin && adding && (
-            <div className="px-3 py-2.5 border-b border-[#333438] bg-[#232426]">
+            <div className="px-3 py-2.5 border-b border-[color:var(--c-333438)] bg-[color:var(--c-232426)]">
                <input
                  autoFocus
                  value={title}
                  onChange={e => setTitle(e.target.value)}
                  onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false); }}
                  placeholder="Task Name or type '/' for commands"
-                 className="w-full bg-transparent text-sm text-white outline-none placeholder:text-[#8a8c91]"
+                 className="w-full bg-transparent text-sm text-[color:var(--c-white)] outline-none placeholder:text-[color:var(--c-8a8c91)]"
                />
             </div>
           )}
@@ -264,7 +264,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
       {/* Drag Overlay */}
       <DragOverlay>
         {activeTask ? (
-          <div className="bg-[#2a2b2e] border border-indigo-500 rounded px-3 py-2 text-sm text-white shadow-xl opacity-90">
+          <div className="bg-[color:var(--c-2a2b2e)] border border-indigo-500 rounded px-3 py-2 text-sm text-[color:var(--c-white)] shadow-xl opacity-90">
             {activeTask.title}
           </div>
         ) : null}

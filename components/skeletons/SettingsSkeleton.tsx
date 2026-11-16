@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsSkeleton() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#1e1f21] p-6 md:p-8">
+    <div className="min-h-screen bg-background dark:bg-[color:var(--c-1e1f21)] p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -13,7 +13,7 @@ export default function SettingsSkeleton() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
           <div className="md:col-span-1">
-            <div className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-4 space-y-2">
+            <div className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-4 space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 w-full rounded" />
               ))}
@@ -23,7 +23,7 @@ export default function SettingsSkeleton() {
           {/* Main Content */}
           <div className="md:col-span-3 space-y-6">
             {/* Profile Section */}
-            <div className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-6 space-y-4">
+            <div className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-6 space-y-4">
               <Skeleton className="h-6 w-32" />
               <div className="flex items-center gap-4">
                 <Skeleton className="h-16 w-16 rounded-full flex-shrink-0" />
@@ -39,7 +39,7 @@ export default function SettingsSkeleton() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-card dark:bg-[#232426] border border-border dark:border-[#333438] rounded-lg p-6 space-y-4"
+                className="bg-card dark:bg-[color:var(--c-232426)] border border-border dark:border-[color:var(--c-333438)] rounded-lg p-6 space-y-4"
               >
                 <Skeleton className="h-6 w-40" />
                 <div className="space-y-3">

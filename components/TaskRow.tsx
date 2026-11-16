@@ -248,16 +248,16 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
           {...attributes}
           {...listeners}
           onClick={onClick}
-          className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2.5 border-b border-[#333438] hover:bg-[#2a2b2e] transition-colors cursor-pointer items-center text-[13px] text-[#e5e5e5]"
+          className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2.5 border-b border-[color:var(--c-333438)] hover:bg-[color:var(--c-2a2b2e)] transition-colors cursor-pointer items-center text-[13px] text-[color:var(--c-e5e5e5)]"
         >
           {/* Name & Quick Hover Actions */}
           <div className="flex items-center gap-2 truncate relative" onClick={(e) => e.stopPropagation()}>
             {childSubtasks.length > 0 && (
-              <button onClick={() => setSubtasksOpen(!subtasksOpen)} className="text-[#8a8c91] hover:text-white">
+              <button onClick={() => setSubtasksOpen(!subtasksOpen)} className="text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">
                 {subtasksOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
               </button>
             )}
-            <Circle className="h-4 w-4 text-[#8a8c91] shrink-0" />
+            <Circle className="h-4 w-4 text-[color:var(--c-8a8c91)] shrink-0" />
 
             {isEditing ? (
               <input
@@ -270,30 +270,30 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                   if (e.key === 'Enter') handleSaveTitle();
                   if (e.key === 'Escape') { setTaskTitle(task.title); setIsEditing(false); }
                 }}
-                className="bg-[#1e1f21] border border-indigo-500 rounded px-1.5 py-0.5 text-white text-[13px] outline-none w-full"
+                className="bg-[color:var(--c-1e1f21)] border border-indigo-500 rounded px-1.5 py-0.5 text-[color:var(--c-white)] text-[13px] outline-none w-full"
               />
             ) : (
               <span className="truncate flex-1" onDoubleClick={() => setIsEditing(true)}>{task.title}</span>
             )}
 
             {childSubtasks.length > 0 && (
-              <span className="flex items-center gap-0.5 text-[10px] text-[#8a8c91] bg-[#232426] px-1.5 py-0.5 rounded border border-[#333438]">
+              <span className="flex items-center gap-0.5 text-[10px] text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] px-1.5 py-0.5 rounded border border-[color:var(--c-333438)]">
                 ↳ {childSubtasks.length}
               </span>
             )}
 
-            <div className="opacity-0 group-hover/row:opacity-100 flex items-center gap-1 bg-[#2a2b2e] px-1 rounded transition-opacity shrink-0 ml-auto">
+            <div className="opacity-0 group-hover/row:opacity-100 flex items-center gap-1 bg-[color:var(--c-2a2b2e)] px-1 rounded transition-opacity shrink-0 ml-auto">
               <button
                 title="Add Subtask"
                 onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(!showSubtaskInput); setSubtasksOpen(true); }}
-                className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white"
+                className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
               <button
                 title="Rename task"
                 onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white"
+                className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
@@ -306,48 +306,48 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
             onClick={(e) => openDropdown(e, 'assignee')}
           >
             {task.assignee ? (
-              <Image src={task.assignee.avatar || ''} alt="A" width={24} height={24} className="rounded-full border border-[#333438] hover:border-indigo-500 transition" />
+              <Image src={task.assignee.avatar || ''} alt="A" width={24} height={24} className="rounded-full border border-[color:var(--c-333438)] hover:border-indigo-500 transition" />
             ) : (
-              <div className="h-6 w-6 rounded-full bg-[#2a2b2e] border border-[#333438] flex items-center justify-center hover:border-indigo-500 transition">
-                <UserCircle className="h-4 w-4 text-[#8a8c91]" />
+              <div className="h-6 w-6 rounded-full bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] flex items-center justify-center hover:border-indigo-500 transition">
+                <UserCircle className="h-4 w-4 text-[color:var(--c-8a8c91)]" />
               </div>
             )}
           </div>
 
           {/* Due Date */}
           <div
-            className="text-[12px] text-[#8a8c91] cursor-pointer hover:text-white transition"
+            className="text-[12px] text-[color:var(--c-8a8c91)] cursor-pointer hover:text-[color:var(--c-white)] transition"
             onClick={(e) => openDropdown(e, 'date')}
           >
             {due ? (
               <span className="hover:text-indigo-400 transition">{due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             ) : (
-              <CalendarIcon className="h-4 w-4 text-[#8a8c91] hover:text-white transition" />
+              <CalendarIcon className="h-4 w-4 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition" />
             )}
           </div>
 
           {/* Priority */}
           <div onClick={(e) => openDropdown(e, 'priority')} className="cursor-pointer">
-            <span className="flex items-center gap-1 text-[12px] text-[#8a8c91] hover:text-white transition">
+            <span className="flex items-center gap-1 text-[12px] text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition">
               <Flag className="h-3.5 w-3.5" style={{ color: priorityColor }} /> {task.priority || 'Normal'}
             </span>
           </div>
 
           {/* Status Pill */}
           <div>
-            <span className="flex items-center justify-center gap-1.5 px-2 py-0.5 bg-[#2a2b2e] border border-[#333438] rounded text-[11px] font-bold text-[#e5e5e5] w-max">
+            <span className="flex items-center justify-center gap-1.5 px-2 py-0.5 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-[11px] font-bold text-[color:var(--c-e5e5e5)] w-max">
               <StatusIcon className="h-3.5 w-3.5" /> {STATUS_LABEL[task.status]}
             </span>
           </div>
 
           {/* Comments */}
           <div className="flex justify-center">
-            <MessageSquare className="h-3.5 w-3.5 text-[#8a8c91] group-hover/row:opacity-100 opacity-60" />
+            <MessageSquare className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] group-hover/row:opacity-100 opacity-60" />
           </div>
         </div>
 
         {showSubtaskInput && (
-          <div className="pl-10 pr-3 py-2 bg-[#232426]/80 border-b border-[#333438] flex items-center gap-2">
+          <div className="pl-10 pr-3 py-2 bg-[color:var(--c-232426)]/80 border-b border-[color:var(--c-333438)] flex items-center gap-2">
             <span className="text-[11px] text-indigo-400 font-semibold">+ Subtask:</span>
             <input
               ref={inputRef}
@@ -361,7 +361,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
               }}
               placeholder="Subtask name... (Press Enter to add multiple)"
               disabled={submittingSubtask}
-              className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-[#8a8c91]"
+              className="flex-1 bg-transparent text-xs text-[color:var(--c-white)] outline-none placeholder:text-[color:var(--c-8a8c91)]"
             />
             <button
               onClick={handleAddSubtask}
@@ -371,23 +371,23 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
               {submittingSubtask && <Loader2 className="h-3 w-3 animate-spin" />}
               {submittingSubtask ? 'Adding...' : 'Add'}
             </button>
-            <button onClick={() => setShowSubtaskInput(false)} className="px-2 py-1 text-xs text-[#8a8c91] hover:text-white">Done</button>
+            <button onClick={() => setShowSubtaskInput(false)} className="px-2 py-1 text-xs text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">Done</button>
           </div>
         )}
       </div>
 
       {subtasksOpen && childSubtasks.map((sub) => (
-        <div key={sub.id} onClick={() => onClick()} className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2 pl-8 border-b border-[#333438]/50 bg-[#191a1c] hover:bg-[#222326] transition-colors cursor-pointer items-center text-[12px] text-[#cccccc]">
+        <div key={sub.id} onClick={() => onClick()} className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2 pl-8 border-b border-[color:var(--c-333438)]/50 bg-[color:var(--c-232426)] hover:bg-[color:var(--c-2a2b2e)] transition-colors cursor-pointer items-center text-[12px] text-[color:var(--c-c4c5c8)]">
           <div className="flex items-center gap-2 truncate">
             <span className="text-indigo-400 font-mono text-[10px]">└─</span>
-            <Circle className="h-3.5 w-3.5 text-[#8a8c91] shrink-0" />
+            <Circle className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] shrink-0" />
             <span className="truncate">{sub.title}</span>
           </div>
-          <div className="text-xs text-[#8a8c91]">-</div>
-          <div className="text-xs text-[#8a8c91]">-</div>
-          <div className="text-xs text-[#8a8c91]">{sub.priority}</div>
+          <div className="text-xs text-[color:var(--c-8a8c91)]">-</div>
+          <div className="text-xs text-[color:var(--c-8a8c91)]">-</div>
+          <div className="text-xs text-[color:var(--c-8a8c91)]">{sub.priority}</div>
           <div>
-            <span className="px-1.5 py-0.5 bg-[#2a2b2e] rounded text-[10px] text-white">{sub.status}</span>
+            <span className="px-1.5 py-0.5 bg-[color:var(--c-2a2b2e)] rounded text-[10px] text-[color:var(--c-white)]">{sub.status}</span>
           </div>
           <div></div>
         </div>
@@ -399,24 +399,24 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showAssignee && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="fixed w-[280px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden"
+            className="fixed w-[280px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-hidden"
             style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#333438]">
-              <UserCircle className="h-4 w-4 text-[#8a8c91] shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[color:var(--c-333438)]">
+              <UserCircle className="h-4 w-4 text-[color:var(--c-8a8c91)] shrink-0" />
               <input
                 autoFocus
                 value={assigneeSearch}
                 onChange={e => setAssigneeSearch(e.target.value)}
                 placeholder="Search..."
-                className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-[#555]"
+                className="flex-1 bg-transparent text-xs text-[color:var(--c-white)] outline-none placeholder:text-[#555]"
               />
             </div>
 
-            <div className="flex border-b border-[#333438] text-[11px]">
-              <button className="px-3 py-1.5 text-white font-semibold border-b-2 border-indigo-500">All</button>
-              <button className="px-3 py-1.5 text-[#8a8c91]">People</button>
+            <div className="flex border-b border-[color:var(--c-333438)] text-[11px]">
+              <button className="px-3 py-1.5 text-[color:var(--c-white)] font-semibold border-b-2 border-indigo-500">All</button>
+              <button className="px-3 py-1.5 text-[color:var(--c-8a8c91)]">People</button>
             </div>
 
             <div className="max-h-[220px] overflow-y-auto py-1">
@@ -425,7 +425,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
               {currentUser && (
                 <button
                   onClick={() => handleAssigneeChange(currentUser.id)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-white hover:bg-[#333438] transition"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
                 >
                   {currentUser.avatar ? (
                     <Image src={currentUser.avatar} alt="" width={22} height={22} className="rounded-full" />
@@ -446,7 +446,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                 <button
                   key={u.id}
                   onClick={() => handleAssigneeChange(u.id)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-white hover:bg-[#333438] transition"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
                 >
                   {u.avatar ? (
                     <Image src={u.avatar} alt="" width={22} height={22} className="rounded-full" />
@@ -463,7 +463,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
               {task.assigneeId && (
                 <button
                   onClick={() => handleAssigneeChange('')}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-[#333438] transition border-t border-[#333438] mt-1"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-[color:var(--c-333438)] transition border-t border-[color:var(--c-333438)] mt-1"
                 >
                   <Ban className="h-3.5 w-3.5" /> Unassign
                 </button>
@@ -478,37 +478,37 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showDatePicker && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="fixed w-[480px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden"
+            className="fixed w-[480px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-hidden"
             style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
             onClick={e => e.stopPropagation()}
           >
             {/* Start / Due tabs */}
-            <div className="flex border-b border-[#333438]">
-              <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-[#8a8c91] border-b-2 border-transparent">
+            <div className="flex border-b border-[color:var(--c-333438)]">
+              <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-[color:var(--c-8a8c91)] border-b-2 border-transparent">
                 <CalendarIcon className="h-3.5 w-3.5" /> Start date
               </button>
-              <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-white font-semibold border-b-2 border-indigo-500">
+              <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-[color:var(--c-white)] font-semibold border-b-2 border-indigo-500">
                 <CalendarIcon className="h-3.5 w-3.5" /> Due date
               </button>
             </div>
 
             <div className="flex">
               {/* Quick options */}
-              <div className="w-[200px] border-r border-[#333438] py-1">
+              <div className="w-[200px] border-r border-[color:var(--c-333438)] py-1">
                 {quickDates.map(opt => (
                   <button
                     key={opt.label}
                     onClick={() => handleDateChange(opt.date)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-white hover:bg-[#333438] transition"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
                   >
                     <span>{opt.label}</span>
-                    <span className="text-[10px] text-[#8a8c91]">{opt.hint}</span>
+                    <span className="text-[10px] text-[color:var(--c-8a8c91)]">{opt.hint}</span>
                   </button>
                 ))}
                 {selectedDate && (
                   <button
                     onClick={() => handleDateChange(null)}
-                    className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-red-400 hover:bg-[#333438] transition mt-1 border-t border-[#333438]"
+                    className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-red-400 hover:bg-[color:var(--c-333438)] transition mt-1 border-t border-[color:var(--c-333438)]"
                   >
                     <Ban className="h-3 w-3" /> Clear date
                   </button>
@@ -518,11 +518,11 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
               {/* Calendar */}
               <div className="flex-1 p-3">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-white">
+                  <span className="text-xs font-semibold text-[color:var(--c-white)]">
                     {new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button onClick={prevMonth} className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white transition">
+                    <button onClick={prevMonth} className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition">
                       <ChevronLeft className="h-3.5 w-3.5" />
                     </button>
                     <button
@@ -531,7 +531,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                     >
                       Today
                     </button>
-                    <button onClick={nextMonth} className="p-1 hover:bg-[#333438] rounded text-[#8a8c91] hover:text-white transition">
+                    <button onClick={nextMonth} className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition">
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -554,7 +554,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                         disabled={!d.currentMonth}
                         className={[
                           'h-7 w-7 mx-auto flex items-center justify-center text-[11px] rounded-full transition',
-                          !d.currentMonth ? 'text-[#333438]' : 'text-[#e5e5e5] hover:bg-[#444]',
+                          !d.currentMonth ? 'text-[color:var(--c-333438)]' : 'text-[color:var(--c-e5e5e5)] hover:bg-[#444]',
                           isToday ? 'bg-indigo-600 text-white font-bold' : '',
                           isSel && !isToday ? 'bg-indigo-500/30 text-indigo-300 font-bold ring-1 ring-indigo-500' : '',
                         ].join(' ')}
@@ -575,17 +575,17 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showPriority && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="fixed w-[240px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden"
+            className="fixed w-[240px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-hidden"
             style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-3 py-2.5 border-b border-[#333438]">
+            <div className="px-3 py-2.5 border-b border-[color:var(--c-333438)]">
               <input
                 autoFocus
                 value={prioritySearch}
                 onChange={e => setPrioritySearch(e.target.value)}
                 placeholder="Search..."
-                className="w-full bg-[#1e1f21] border border-[#333438] rounded px-2 py-1.5 text-xs text-white outline-none placeholder:text-[#555] focus:border-[#555] transition"
+                className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded px-2 py-1.5 text-xs text-[color:var(--c-white)] outline-none placeholder:text-[#555] focus:border-[#555] transition"
               />
             </div>
 
@@ -595,7 +595,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                 <button
                   key={p.value}
                   onClick={() => handlePriorityChange(p.value)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-white hover:bg-[#333438] transition"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
                 >
                   <span className="h-3.5 w-3.5 rounded-sm shrink-0" style={{ backgroundColor: p.color }} />
                   <span className="flex-1 text-left">{p.label}</span>
@@ -605,7 +605,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
               ))}
               <button
                 onClick={() => handlePriorityChange('NORMAL')}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#8a8c91] hover:bg-[#333438] hover:text-white transition"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-333438)] hover:text-[color:var(--c-white)] transition"
               >
                 <Ban className="h-3.5 w-3.5 shrink-0" />
                 <span className="flex-1 text-left">Clear</span>

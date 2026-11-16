@@ -45,7 +45,7 @@ export default function UpgradePage() {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('yearly');
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-[#1e1f21] text-white">
+    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-[color:var(--c-1e1f21)] text-[color:var(--c-white)]">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -56,24 +56,24 @@ export default function UpgradePage() {
               <Check className="h-3 w-3" /> 30-day money-back guarantee
             </span>
           </h1>
-          <p className="text-[#8a8c91] mt-2">
-            Your Workspace is currently on the <strong className="text-white">Free Forever Plan</strong>. You have used 1.75/60 MB.
+          <p className="text-[color:var(--c-8a8c91)] mt-2">
+            Your Workspace is currently on the <strong className="text-[color:var(--c-white)]">Free Forever Plan</strong>. You have used 1.75/60 MB.
           </p>
         </div>
 
         {/* Billing Toggle */}
         <div className="flex items-center gap-3">
           <span className="text-sm text-emerald-400 font-medium">Save up to 30% with yearly</span>
-          <div className="flex bg-[#2a2b2e] p-1 rounded-lg border border-[#333438]">
+          <div className="flex bg-[color:var(--c-2a2b2e)] p-1 rounded-lg border border-[color:var(--c-333438)]">
             <button 
               onClick={() => setBilling('yearly')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${billing === 'yearly' ? 'bg-[#333438] text-white' : 'text-[#8a8c91] hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${billing === 'yearly' ? 'bg-[color:var(--c-333438)] text-[color:var(--c-white)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
             >
               Yearly
             </button>
             <button 
               onClick={() => setBilling('monthly')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${billing === 'monthly' ? 'bg-[#333438] text-white' : 'text-[#8a8c91] hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${billing === 'monthly' ? 'bg-[color:var(--c-333438)] text-[color:var(--c-white)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
             >
               Monthly
             </button>
@@ -88,8 +88,8 @@ export default function UpgradePage() {
             key={plan.name} 
             className={`relative flex flex-col p-6 rounded-xl border ${
               plan.highlight 
-                ? 'border-indigo-500 bg-[#25262b] shadow-lg shadow-indigo-500/10' 
-                : 'border-[#333438] bg-[#1e1f21]'
+                ? 'border-indigo-500 bg-[color:var(--c-2a2b2e)] shadow-lg shadow-indigo-500/10' 
+                : 'border-[color:var(--c-333438)] bg-[color:var(--c-1e1f21)]'
             }`}
           >
             {plan.popular && (
@@ -99,21 +99,21 @@ export default function UpgradePage() {
             )}
 
             <h2 className="text-xl font-bold">{plan.name}</h2>
-            <p className="text-sm text-[#8a8c91] mt-1 mb-6">{plan.desc}</p>
+            <p className="text-sm text-[color:var(--c-8a8c91)] mt-1 mb-6">{plan.desc}</p>
             
             <div className="mb-6">
               <span className="text-4xl font-extrabold">{plan.price}</span>
-              <span className="text-sm text-[#8a8c91] ml-1">{plan.disabled ? '' : 'user / mo · billed yearly'}</span>
+              <span className="text-sm text-[color:var(--c-8a8c91)] ml-1">{plan.disabled ? '' : 'user / mo · billed yearly'}</span>
             </div>
 
             <button 
               disabled={plan.disabled}
               className={`w-full py-2.5 rounded-lg font-semibold text-sm transition mb-6 ${
                 plan.disabled 
-                  ? 'bg-[#2a2b2e] text-[#8a8c91] cursor-not-allowed border border-[#333438]'
+                  ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-8a8c91)] cursor-not-allowed border border-[color:var(--c-333438)]'
                   : plan.highlight
                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
-                    : 'bg-[#2a2b2e] hover:bg-[#333438] text-white border border-[#333438]'
+                    : 'bg-[color:var(--c-2a2b2e)] hover:bg-[color:var(--c-333438)] text-[color:var(--c-white)] border border-[color:var(--c-333438)]'
               }`}
             >
               {plan.buttonText}
@@ -121,7 +121,7 @@ export default function UpgradePage() {
 
             <div className="flex-1 space-y-3">
               {plan.features.map(f => (
-                <div key={f} className="flex items-start gap-2 text-sm text-[#e5e5e5]">
+                <div key={f} className="flex items-start gap-2 text-sm text-[color:var(--c-e5e5e5)]">
                   <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                   <span>{f}</span>
                 </div>
