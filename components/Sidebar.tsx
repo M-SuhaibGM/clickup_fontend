@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   ChevronRight,
   ChevronsLeft,

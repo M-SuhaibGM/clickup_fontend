@@ -56,17 +56,15 @@ export default function AiChatDrawer({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 z-[60] transition-opacity duration-300 ${
-          open ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 bg-black/50 z-60 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-[420px] bg-[color:var(--c-1e1f21)] border-l border-[color:var(--c-333438)] z-[70] flex flex-col transition-transform duration-300 ease-in-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-full max-w-[420px] bg-[color:var(--c-1e1f21)] border-l border-[color:var(--c-333438)] z-[150] flex flex-col transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 h-12 border-b border-[color:var(--c-333438)] shrink-0">
@@ -80,7 +78,7 @@ export default function AiChatDrawer({
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
-                className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded transition"
+                className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-(--c-2a2b2e) rounded transition"
                 title="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />
@@ -105,7 +103,7 @@ export default function AiChatDrawer({
               <h3 className="text-[15px] font-semibold text-[color:var(--c-white)] mb-1">
                 ClickUp AI Assistant
               </h3>
-              <p className="text-[12px] text-[color:var(--c-8a8c91)] mb-6 max-w-[280px]">
+              <p className="text-[12px] text-(--c-8a8c91) mb-6 max-w-70">
                 Ask me anything about your tasks, projects, or let me help you
                 draft content.
               </p>
@@ -125,9 +123,8 @@ export default function AiChatDrawer({
             messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2.5 ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 {msg.role === 'assistant' && (
                   <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shrink-0 mt-0.5">
@@ -135,13 +132,12 @@ export default function AiChatDrawer({
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-white rounded-br-sm'
-                      : msg.error
-                        ? 'bg-red-500/10 text-red-300 border border-red-500/30 rounded-bl-sm'
-                        : 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-e5e5e5)] border border-[color:var(--c-333438)] rounded-bl-sm'
-                  }`}
+                  className={`max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed ${msg.role === 'user'
+                    ? 'bg-primary text-white rounded-br-sm'
+                    : msg.error
+                      ? 'bg-red-500/10 text-red-300 border border-red-500/30 rounded-bl-sm'
+                      : 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-e5e5e5)] border border-[color:var(--c-333438)] rounded-bl-sm'
+                    }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
