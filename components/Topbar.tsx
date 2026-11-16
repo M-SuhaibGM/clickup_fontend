@@ -109,7 +109,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
 
             {/* Workspace Dropdown (Kept from previous step) */}
             {wsMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-[320px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl z-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute top-full left-0 mt-2 w-[320px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl z-1000 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* ... Workspace Dropdown Content ... */}
                 <div className="p-4 pb-3">
                   <div className="flex items-center gap-3 mb-4">
