@@ -53,6 +53,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
   const [title, setTitle] = useState('');
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [overStatus, setOverStatus] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -206,31 +207,42 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
             <div className="text-center">Comments</div>
           </div>
 
-          {Object.entries(groupedTasks).map(([status, groupTasks]) => (
-            <StatusGroupDroppable key={status} status={status} isOver={overStatus === status}>
-              <div className="flex items-center justify-between px-3 py-1.5 bg-[#232426]/60 border-b border-[#333438]">
-                <div className="flex items-center gap-2">
-                  <ChevronDown className="h-3.5 w-3.5 text-[#8a8c91]" />
-                  <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[#2a2b2e] border border-[#333438] rounded text-[11px] font-bold text-white">
-                    <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block"></span> {status.replace('_', ' ')}
-                  </span>
-                  <span className="text-[11px] text-[#8a8c91]">{groupTasks.length}</span>
-                </div>
-              </div>
+          {Object.entries(groupedTasks).map(([status, groupTasks]) => {
+            const isCollapsed = !!collapsedGroups[status];
+            return (
+              <StatusGroupDroppable key={status} status={status} isOver={overStatus === status}>
+                <button
+                  type="button"
+                  onClick={() => setCollapsedGroups((prev) => ({ ...prev, [status]: !prev[status] }))}
+                  className="flex items-center justify-between w-full px-3 py-1.5 bg-[#232426]/60 border-b border-[#333438] cursor-pointer select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <ChevronDown className={`h-3.5 w-3.5 text-[#8a8c91] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[#2a2b2e] border border-[#333438] rounded text-[11px] font-bold text-white">
+                      <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block"></span> {status.replace('_', ' ')}
+                    </span>
+                    <span className="text-[11px] text-[#8a8c91]">{groupTasks.length}</span>
+                  </div>
+                </button>
 
-              <SortableContext items={groupTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                {groupTasks.map((t) => (
-                  <TaskRow key={t.id} task={t} allTasks={tasks} onClick={() => onTaskClick(t)} />
-                ))}
-              </SortableContext>
+                {!isCollapsed && (
+                  <>
+                    <SortableContext items={groupTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                      {groupTasks.map((t) => (
+                        <TaskRow key={t.id} task={t} allTasks={tasks} onClick={() => onTaskClick(t)} />
+                      ))}
+                    </SortableContext>
 
-              {groupTasks.length === 0 && (
-                <div className="px-3 py-4 text-center text-xs text-[#8a8c91]">
-                  Drop tasks here
-                </div>
-              )}
-            </StatusGroupDroppable>
-          ))}
+                    {groupTasks.length === 0 && (
+                      <div className="px-3 py-4 text-center text-xs text-[#8a8c91]">
+                        Drop tasks here
+                      </div>
+                    )}
+                  </>
+                )}
+              </StatusGroupDroppable>
+            );
+          })}
 
           {isAdmin && adding && (
             <div className="px-3 py-2.5 border-b border-[#333438] bg-[#232426]">
