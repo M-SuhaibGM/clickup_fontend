@@ -154,7 +154,7 @@ function MoreMenu() {
 
       {/* Popover Menu - FIXED TO BOTTOM OF SCREEN */}
       {isOpen && (
-        <div className="fixed bottom-4 left-[70px] w-[300px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl p-4 z-[999] animate-in fade-in slide-in-from-left-2 duration-200">
+        <div className="fixed bottom-4 left-17.5 w-75 bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl p-4 z-999 animate-in fade-in slide-in-from-left-2 duration-200">
           
           <div className="grid grid-cols-3 gap-y-5 gap-x-2">
             {items.map((item, i) => (
