@@ -15,6 +15,9 @@ const SOCKET_URL =
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  experimental: {
+    agentUpgrade: "security",
+  },
   turbopack: {
     rules: {
       "*.css": {
