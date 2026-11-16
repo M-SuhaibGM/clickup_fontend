@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { useAiChat } from '@/lib/useAiChat';
 import {
   X,
   Send,
@@ -12,12 +12,6 @@ import {
   Trash2,
 } from 'lucide-react';
 
-type Message = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-};
-
 export default function AiChatDrawer({
   open,
   onClose,
@@ -25,9 +19,8 @@ export default function AiChatDrawer({
   open: boolean;
   onClose: () => void;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, loading, send, clear } = useAiChat();
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -37,46 +30,18 @@ export default function AiChatDrawer({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, loading]);
 
-  const sendMessage = async () => {
+  const sendMessage = () => {
     const text = input.trim();
     if (!text || loading) return;
-
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: text,
-    };
-    setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    setLoading(true);
-
-    try {
-      const { data } = await api.post<{ reply: string }>('/ai/chat', {
-        message: text,
-        history: messages.map((m) => ({ role: m.role, content: m.content })),
-      });
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.reply,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch {
-      const errorMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setLoading(false);
-    }
+    if (inputRef.current) inputRef.current.style.height = '24px';
+    send(text);
   };
 
   const clearChat = () => {
-    setMessages([]);
+    clear();
     setInput('');
   };
 
@@ -148,10 +113,7 @@ export default function AiChatDrawer({
                 {suggestions.map((s) => (
                   <button
                     key={s}
-                    onClick={() => {
-                      setInput(s);
-                      inputRef.current?.focus();
-                    }}
+                    onClick={() => send(s)}
                     className="w-full text-left px-3 py-2.5 rounded-lg border border-[#333438] bg-[#2a2b2e] hover:bg-[#333438] text-[12px] text-[#c4c4c4] hover:text-white transition"
                   >
                     {s}
@@ -176,7 +138,9 @@ export default function AiChatDrawer({
                   className={`max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-[#2c82f8] text-white rounded-br-sm'
-                      : 'bg-[#2a2b2e] text-[#e5e5e5] border border-[#333438] rounded-bl-sm'
+                      : msg.error
+                        ? 'bg-red-500/10 text-red-300 border border-red-500/30 rounded-bl-sm'
+                        : 'bg-[#2a2b2e] text-[#e5e5e5] border border-[#333438] rounded-bl-sm'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
