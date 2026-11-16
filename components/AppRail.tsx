@@ -17,7 +17,7 @@ export default function AppRail({
 
   return (
     <>
-      <div className="w-18 shrink-0 h-full flex flex-col items-center py-3 z-50 bg-[#232426] border border-[#333438] rounded-lg mb-2 overflow-hidden">
+      <div className="w-18 shrink-0 h-full flex flex-col items-center py-3 z-50 bg-[#232426] border border-[#333438] rounded-lg mb-2 mr-2 overflow-hidden">
         
         {/* Top Section */}
         <div className="flex flex-col items-center w-full shrink-0">

@@ -22,7 +22,7 @@ export default function SidebarDrawer({
   return (
     <div
       style={{ width: `${width}px` }}
-      className="relative h-full bg-[#232426] border border-[#333438] rounded-lg flex flex-col shrink-0 transition-none overflow-hidden"
+      className="relative h-full bg-[#232426] border border-r-0 border-[#333438] rounded-l-lg flex flex-col shrink-0 transition-none overflow-hidden"
     >
       {/* The Sidebar content goes here */}
       <div className="flex-1 overflow-hidden">

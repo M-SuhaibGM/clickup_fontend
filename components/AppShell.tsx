@@ -128,7 +128,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto relative bg-[#1e1f21] rounded-lg border border-[#333438]">
+        <main className={`flex-1 overflow-y-auto relative bg-[#1e1f21] border border-[#333438] ${isSidebarOpen ? 'rounded-r-lg' : 'rounded-lg'}`}>
           {children}
           {!ready && (
             <div className="absolute inset-0 z-10 bg-[#1e1f21] rounded-lg">

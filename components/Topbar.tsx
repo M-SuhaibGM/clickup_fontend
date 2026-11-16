@@ -9,6 +9,7 @@ import { logout } from '@/lib/auth';
 import Image from 'next/image';
 import { ThemeToggle } from './theme-toggle';
 import NewWorkspaceModal from './Newworkspacemodal';
+import Link from 'next/link';
 import {
   Menu,
   Search,
@@ -42,7 +43,6 @@ import {
   ExternalLink,
   ChevronRight,
   LogOut,
-  Link
 } from 'lucide-react';
 
 export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: () => void; onAiChatClick?: () => void }) {
@@ -120,7 +120,8 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
                         {activeWorkspace?.name}
                       </h3>
                       <p className="text-[11px] text-[#8a8c91] mt-0.5">
-                        Free Forever · <span className="underline cursor-pointer hover:text-white transition">Upgrade</span>
+                        <Link href='/upgrade'>
+                          Free Forever · <span className="underline cursor-pointer hover:text-white transition">Upgrade</span></Link>
                       </p>
                     </div>
                   </div>
