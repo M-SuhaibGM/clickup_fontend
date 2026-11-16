@@ -84,18 +84,19 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
 
   return (
     <>
-      <header className="h-12 shrink-0 bg-[#1e1f21] flex items-center justify-between px-3 text-[#e5e5e5] select-none z-50">
+      <header className="h-9 shrink-0 bg-[#1e1f21] flex items-center justify-between px-3 text-[#e5e5e5] select-none z-50">
 
         {/* LEFT: Workspace Switcher */}
         <div className="flex items-center gap-2 flex-1">
-          <button onClick={onMenuClick} className="md:hidden p-1.5 hover:bg-[#2a2b2e] rounded text-[#8a8c91] hover:text-white transition">
+          <button onClick={onMenuClick} className="md:hidden p-1.5 bg-[#2a2b2e] rounded text-[#8a8c91] hover:text-white transition">
             <Menu className="h-5 w-5" />
           </button>
 
           <div className="relative" ref={wsMenuRef}>
             <button
               onClick={() => setWsMenuOpen(!wsMenuOpen)}
-              className="flex items-center gap-2 hover:bg-[#2a2b2e] px-2 py-1.5 rounded transition-colors"
+              // UPDATED CLASSNAME HERE:
+              className="flex items-center gap-2 bg-[#2a2b2e] border border-[#333438] hover:bg-[#333438] px-2 py-0.5 rounded-md  mt-1 transition-colors"
             >
               <div className="h-6 w-6 rounded bg-[#1bb5a5] text-white flex items-center justify-center text-[11px] font-bold">
                 {getInitials(activeWorkspace?.name)}
@@ -142,12 +143,6 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
                   </div>
                 </div>
                 <div className="h-px bg-[#333438] w-full" />
-                <div className="px-2 py-2">
-                  <p className="px-2 text-[10px] uppercase tracking-wider font-bold text-[#8a8c91] mb-1">Manage</p>
-                  {[{ icon: LayoutGrid, label: 'Apps', color: 'text-pink-500' }, { icon: FileText, label: 'Templates', color: 'text-blue-500' }, { icon: Edit3, label: 'Custom Fields', color: 'text-emerald-500' }, { icon: Bot, label: 'Automations', color: 'text-amber-500' }, { icon: Tag, label: 'Tag Manager', color: 'text-purple-500' }].map((item) => (
-                    <button key={item.label} className="w-full flex items-center gap-3 px-2 py-1.5 hover:bg-[#2a2b2e] rounded-md transition-colors group"><item.icon className={`h-4 w-4 ${item.color}`} /><span className="text-[13px] text-[#e5e5e5] group-hover:text-white transition-colors">{item.label}</span></button>
-                  ))}
-                </div>
                 <div className="h-px bg-[#333438] w-full" />
                 <div className="px-2 py-2">
                   <p className="px-2 text-[10px] uppercase tracking-wider font-bold text-[#8a8c91] mb-1">Your Workspaces</p>
