@@ -1,12 +1,12 @@
 'use client';
 
-import { 
-  ChevronsRight, 
-  Home, 
-  Calendar, 
-  Users, 
-  LayoutGrid, 
-  FlaskConical, 
+import {
+  ChevronsRight,
+  Home,
+  Calendar,
+  Users,
+  LayoutGrid,
+  FlaskConical,
   UserPlus,
   Grip,
   Orbit,
@@ -40,7 +40,7 @@ export default function AppRail({
   return (
     <>
       <div className="w-13 shrink-0 h-full flex flex-col items-center py-3 z-50  dark:bg-[#232426]   rounded-lg mb-2 mr-2 relative">
-        
+
         {/* Top Section */}
         <div className="flex flex-col items-center w-full shrink-0">
           <div className={`w-full flex justify-center transition-all duration-300 ${isSidebarOpen ? 'h-0 opacity-0 mb-0' : 'h-10 opacity-100 mb-2'}`}>
@@ -57,9 +57,19 @@ export default function AppRail({
             </div>
             <span className={`text-[10px] font-medium transition-colors ${pathname === '/dashboard' ? 'text-white' : 'text-[#8a8c91] group-hover:text-white'}`}>Home</span>
           </Link>
-
-          <RailItem icon={Calendar} label="Planner" active={active === 'Planner'} onClick={() => setActive('Planner')} />
-
+          {/* Replace the Planner RailItem with this: */}
+          <Link href="/planner" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
+            <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/planner' ? 'text-white bg-[#2a2b2e]' : 'text-[#8a8c91] group-hover:text-white group-hover:bg-[#2a2b2e]/50'
+              }`}>
+              {pathname === '/planner' && (
+                <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />
+              )}
+              <Calendar className={`h-5 w-5 relative z-10 ${pathname === '/planner' ? 'text-white' : ''}`} />
+            </div>
+            <span className={`text-[10px] font-medium transition-colors ${pathname === '/planner' ? 'text-white' : 'text-[#8a8c91] group-hover:text-white'}`}>
+              Planner
+            </span>
+          </Link>
           {/* AI Link */}
           <Link href="/ai" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
             <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/ai' ? 'text-white bg-[#2a2b2e]' : 'text-[#8a8c91] group-hover:text-white group-hover:bg-[#2a2b2e]/50'}`}>
@@ -76,10 +86,10 @@ export default function AppRail({
             </div>
             <span className={`text-[10px] font-medium transition-colors ${pathname === '/teams' ? 'text-white' : 'text-[#8a8c91] group-hover:text-white'}`}>Teams</span>
           </Link>
-          
+
           {/* The More Button */}
           <MoreMenu />
-          
+
         </div>
 
         <div className="flex-1" />
@@ -138,13 +148,12 @@ function MoreMenu() {
   return (
     <div className="relative w-full flex flex-col items-center my-1.5" ref={menuRef}>
       {/* Trigger Button */}
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={`flex flex-col items-center justify-center gap-1 group w-full`}
       >
-        <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${
-          isOpen ? 'text-white bg-[#2a2b2e]' : 'text-[#8a8c91] group-hover:text-white group-hover:bg-[#2a2b2e]/50'
-        }`}>
+        <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${isOpen ? 'text-white bg-[#2a2b2e]' : 'text-[#8a8c91] group-hover:text-white group-hover:bg-[#2a2b2e]/50'
+          }`}>
           <Grip className={`h-5 w-5 relative z-10`} />
         </div>
         <span className={`text-[10px] font-medium transition-colors ${isOpen ? 'text-white' : 'text-[#8a8c91] group-hover:text-white'}`}>
@@ -155,7 +164,7 @@ function MoreMenu() {
       {/* Popover Menu - FIXED TO BOTTOM OF SCREEN */}
       {isOpen && (
         <div className="fixed bottom-4 left-17.5 w-75 bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl p-4 z-999 animate-in fade-in slide-in-from-left-2 duration-200">
-          
+
           <div className="grid grid-cols-3 gap-y-5 gap-x-2">
             {items.map((item, i) => (
               <button key={i} className="flex flex-col items-center gap-2 group">
@@ -167,15 +176,15 @@ function MoreMenu() {
                 </span>
               </button>
             ))}
-            
+
             <button className="flex flex-col items-center gap-2 group">
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-[#2a2b2e] group-hover:scale-105 transition-transform">
-                  <span className="text-lg">🧩</span>
-                </div>
-                <span className="text-[11px] font-medium text-[#e5e5e5] group-hover:text-white transition-colors">
-                  Apps
-                </span>
-              </button>
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-[#2a2b2e] group-hover:scale-105 transition-transform">
+                <span className="text-lg">🧩</span>
+              </div>
+              <span className="text-[11px] font-medium text-[#e5e5e5] group-hover:text-white transition-colors">
+                Apps
+              </span>
+            </button>
           </div>
 
           <div className="mt-5 pt-3 border-t border-[#333438]">
