@@ -100,7 +100,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       
       <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} onAiChatClick={() => setIsAiChatOpen(true)} />
 
-      <div className="flex flex-1 overflow-hidden pt-1 pb-2 px-2 gap-2">
+      <div className="flex flex-1 overflow-hidden pt-1 pb-2 px-2">
         
         {/* App Rail (Far Left) — visible on all screen sizes */}
         <AppRail

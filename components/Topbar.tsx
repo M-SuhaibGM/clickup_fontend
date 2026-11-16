@@ -41,7 +41,8 @@ import {
   AlarmClock,
   ExternalLink,
   ChevronRight,
-  LogOut
+  LogOut,
+  Link
 } from 'lucide-react';
 
 export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: () => void; onAiChatClick?: () => void }) {
@@ -99,7 +100,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
               <div className="h-6 w-6 rounded bg-[#1bb5a5] text-white flex items-center justify-center text-[11px] font-bold">
                 {getInitials(activeWorkspace?.name)}
               </div>
-              <span className="text-[13px] font-semibold text-white hidden sm:block max-w-[150px] truncate">
+              <span className="text-[13px] font-semibold text-white hidden sm:block max-w-37.5 truncate">
                 {activeWorkspace?.name || 'Select Workspace'}
               </span>
               <ChevronDown className="h-3.5 w-3.5 text-[#8a8c91]" />
@@ -107,7 +108,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
 
             {/* Workspace Dropdown (Kept from previous step) */}
             {wsMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-[320px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute top-full left-0 mt-2 w-[320px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl z-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* ... Workspace Dropdown Content ... */}
                 <div className="p-4 pb-3">
                   <div className="flex items-center gap-3 mb-4">
@@ -124,8 +125,19 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="flex-1 flex items-center justify-center gap-2 h-8 bg-[#2a2b2e] hover:bg-[#333438] border border-[#333438] rounded-md text-[12px] font-medium transition"><Settings className="h-3.5 w-3.5 text-[#8a8c91]" /> Settings</button>
-                    <button className="flex-1 flex items-center justify-center gap-2 h-8 bg-[#2a2b2e] hover:bg-[#333438] border border-[#333438] rounded-md text-[12px] font-medium transition"><Users className="h-3.5 w-3.5 text-[#8a8c91]" /> People</button>
+                    <Link
+                      href="/settings"
+                      className="flex-1 flex items-center justify-center gap-2 h-8 bg-[#2a2b2e] hover:bg-[#333438] border border-[#333438] rounded-md text-[12px] font-medium transition text-[#e5e5e5]"
+                    >
+                      <Settings className="h-3.5 w-3.5 text-[#8a8c91]" /> Settings
+                    </Link>
+
+                    <Link
+                      href="/members"
+                      className="flex-1 flex items-center justify-center gap-2 h-8 bg-[#2a2b2e] hover:bg-[#333438] border border-[#333438] rounded-md text-[12px] font-medium transition text-[#e5e5e5]"
+                    >
+                      <Users className="h-3.5 w-3.5 text-[#8a8c91]" /> People
+                    </Link>
                   </div>
                 </div>
                 <div className="h-px bg-[#333438] w-full" />
