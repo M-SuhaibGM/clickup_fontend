@@ -11,6 +11,7 @@ import Topbar from './Topbar';
 import AppRail from './AppRail';
 import AppShellSkeleton from './AppShellSkeleton';
 import { CommandPalette } from './command-palette';
+import AiChatDrawer from './AiChatDrawer';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -22,6 +23,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const [ready, setReady] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+
+  // Auto-close sidebar on mobile screens
+  useEffect(() => {
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
+  }, []);
   
   // Drag state for the drawer
   const [sidebarWidth, setSidebarWidth] = useState(260);
@@ -91,7 +98,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen bg-[#1e1f21] overflow-hidden">
       
-      <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} onAiChatClick={() => setIsAiChatOpen(true)} />
 
       <div className="flex flex-1 overflow-hidden pt-1 pb-2 px-2 gap-2">
         
@@ -132,6 +139,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette />
+      <AiChatDrawer open={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />
     </div>
   );
 }

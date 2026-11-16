@@ -44,7 +44,7 @@ import {
   LogOut
 } from 'lucide-react';
 
-export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
+export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: () => void; onAiChatClick?: () => void }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
@@ -162,7 +162,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <Search className="h-3.5 w-3.5 text-[#8a8c91] mr-2 shrink-0" />
             <span className="text-[13px] text-[#8a8c91] flex-1">Search</span>
             <kbd className="text-[10px] font-sans text-[#8a8c91] bg-transparent border border-[#333438] px-1.5 py-0.5 rounded mr-1 group-hover:border-[#444548] transition-colors">⌘ K</kbd>
-            <button onClick={(e) => { e.stopPropagation(); }} className="ai-gradient-btn flex items-center gap-1.5 px-2.5 py-0.5 bg-[#2a2b2e] text-white shrink-0 ml-1 h-6">
+            <button onClick={(e) => { e.stopPropagation(); onAiChatClick?.(); }} className="ai-gradient-btn flex items-center gap-1.5 px-2.5 py-0.5 bg-[#2a2b2e] text-white shrink-0 ml-1 h-6">
               <span className="text-[12px] font-medium tracking-wide text-[#e5e5e5]">AI Chats</span>
               <img src="/ai-icon.png" alt="AI" className="ai-icon h-4 w-4 object-contain" />
             </button>
