@@ -32,7 +32,7 @@ export default function SidebarDrawer({
       {/* Drag Handle on the right edge */}
       <div
         onMouseDown={startDragging}
-        className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[#2c82f8] transition-colors z-50 ${
+        className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[#2c82f8] transition-colors z-10 ${
           isDragging ? 'bg-[#2c82f8]' : 'bg-transparent'
         }`}
       />
