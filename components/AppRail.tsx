@@ -2,8 +2,9 @@
 
 import { ChevronsRight, Home, Calendar, Sparkles, Users, LayoutGrid, FlaskConical, UserPlus } from 'lucide-react';
 import { useState } from 'react';
-import Link from 'next/link'; // Import Link
-import InviteMemberModal from './InviteMemberModal'; // Import the modal
+import Link from 'next/link'; 
+import Image from 'next/image'; // Import Image
+import InviteMemberModal from './InviteMemberModal'; 
 
 export default function AppRail({ 
   isSidebarOpen, 
@@ -13,7 +14,7 @@ export default function AppRail({
   toggleSidebar: () => void 
 }) {
   const [active, setActive] = useState('Home');
-  const [inviteModalOpen, setInviteModalOpen] = useState(false); // State for modal
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   return (
     <>
@@ -29,7 +30,21 @@ export default function AppRail({
 
           <RailItem icon={Home} label="Home" active={active === 'Home'} onClick={() => setActive('Home')} isGradient />
           <RailItem icon={Calendar} label="Planner" active={active === 'Planner'} onClick={() => setActive('Planner')} />
-          <RailItem icon={Sparkles} label="AI" active={active === 'AI'} onClick={() => setActive('AI')} />
+          
+          {/* AI Link with Custom Image */}
+          <Link href="/ai" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
+            <div className="relative p-1.5 rounded-lg transition-all duration-200 text-[#8a8c91] group-hover:text-white group-hover:bg-[#2a2b2e]/50">
+              <Image 
+                src="/ai-icon.png" 
+                alt="AI" 
+                width={20} 
+                height={20} 
+                className="h-5 w-5 relative z-10 object-contain"
+              />
+            </div>
+            <span className="text-[10px] font-medium transition-colors text-[#8a8c91] group-hover:text-white">AI</span>
+          </Link>
+
           <RailItem icon={Users} label="Teams" active={active === 'Teams'} onClick={() => setActive('Teams')} />
           <RailItem icon={LayoutGrid} label="More" active={active === 'More'} onClick={() => setActive('More')} />
         </div>
@@ -39,42 +54,23 @@ export default function AppRail({
         {/* Bottom Section */}
         <div className="flex flex-col items-center w-full shrink-0 pb-1">
           <RailItem icon={FlaskConical} label="Labs" active={false} onClick={() => {}} />
+          <RailItem icon={UserPlus} label="Invite" active={false} onClick={() => setInviteModalOpen(true)} />
           
-          {/* Updated Invite Button to open Modal */}
-          <RailItem 
-            icon={UserPlus} 
-            label="Invite" 
-            active={false} 
-            onClick={() => setInviteModalOpen(true)} 
-          />
-          
-          {/* Updated Upgrade Button to Link to page */}
-          <Link 
-            href="/upgrade"
-            className="flex flex-col items-center gap-1 text-[#8a8c91] hover:text-white transition mt-3 group"
-          >
+          <Link href="/upgrade" className="flex flex-col items-center gap-1 text-[#8a8c91] hover:text-white transition mt-3 group">
             <span className="text-xl leading-none group-hover:scale-110 transition-transform">🚀</span>
             <span className="text-[10px] font-semibold">Upgrade</span>
           </Link>
         </div>
       </div>
 
-      {/* Render the Invite Modal */}
-      <InviteMemberModal 
-        open={inviteModalOpen} 
-        onClose={() => setInviteModalOpen(false)} 
-      />
+      <InviteMemberModal open={inviteModalOpen} onClose={() => setInviteModalOpen(false)} />
     </>
   );
 }
 
-// Keep your existing RailItem component below...
 function RailItem({ icon: Icon, label, active, onClick, isGradient }: any) {
   return (
-    <button 
-      onClick={onClick} 
-      className="flex flex-col items-center justify-center gap-1 group w-full my-1.5"
-    >
+    <button onClick={onClick} className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
       <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${
         active ? 'text-white bg-[#2a2b2e]' : 'text-[#8a8c91] group-hover:text-white group-hover:bg-[#2a2b2e]/50'
       }`}>
