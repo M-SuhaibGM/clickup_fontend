@@ -28,6 +28,7 @@ const COLUMNS = [
 
 const EMPTY_TASKS: never[] = [];
 
+
 export default function BoardView({
     listId,
     onTaskClick,

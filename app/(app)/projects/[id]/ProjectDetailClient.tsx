@@ -22,10 +22,15 @@ import {
   Trash2,
   Loader2,
   Sparkles,
+  Hash,
+  Calendar as CalendarIcon,
+   GanttChart,
+  Table as TableIcon,
 } from 'lucide-react';
 import AiDraftModal from '@/components/AiDraftModal';
 import TaskList from '@/components/TaskList';
 import BoardView from '@/components/BoardView';
+import TaskDetailModal from '@/components/TaskDetailModal';
 import SocketProvider from '@/components/SocketProvider';
 import AppShellSkeleton from '@/components/AppShellSkeleton';
 import {
@@ -88,21 +93,24 @@ function SortableListTab({
       {...attributes}
       {...listeners}
       onClick={onSelect}
-      className={`group relative flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium cursor-grab active:cursor-grabbing transition-all select-none border ${active
+      className={`group relative flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium cursor-grab active:cursor-grabbing transition-all select-none border ${
+        active
           ? 'bg-indigo-50/70 border-indigo-200 text-indigo-950 shadow-xs dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-200'
           : 'bg-transparent border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-        }`}
+      }`}
     >
       <ListIcon
-        className={`h-3.5 w-3.5 shrink-0 transition-colors ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-muted-foreground'
-          }`}
+        className={`h-3.5 w-3.5 shrink-0 transition-colors ${
+          active ? 'text-indigo-600 dark:text-indigo-400' : 'text-muted-foreground'
+        }`}
       />
       <span className="truncate max-w-[140px]">{list.name}</span>
       <span
-        className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${active
+        className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+          active
             ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300'
             : 'bg-muted text-muted-foreground'
-          }`}
+        }`}
       >
         {list._count?.tasks ?? 0}
       </span>
@@ -130,7 +138,7 @@ export default function ProjectDetailClient() {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'board' | 'channel' | 'calendar' | 'gantt' | 'table'>('list');
 
   // Role & Settings
   const currentUser = useAuthStore((s) => s.user);
@@ -273,9 +281,10 @@ export default function ProjectDetailClient() {
     }
   };
 
-  // ← Helper: Navigate to Task Page
-  const handleTaskClick = (task: { id: string }) => {
-    router.push(`/tasks/${task.id}`);
+  const [selectedTask, setSelectedTask] = useState<{ id: string; listId: string } | null>(null);
+
+  const handleTaskClick = (task: { id: string; listId?: string }) => {
+    setSelectedTask({ id: task.id, listId: (task as any).listId ?? activeListId ?? '' });
   };
 
   if (loading) return <AppShellSkeleton />;
@@ -289,102 +298,132 @@ export default function ProjectDetailClient() {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="min-h-screen bg-[#1e1f21] text-[#e5e5e5] p-3 sm:p-6 max-w-[100vw] overflow-x-hidden space-y-4">
       <SocketProvider projectId={id} />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border/60 pb-4 sm:pb-6">
-        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
-          <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-xl shrink-0 flex items-center justify-center shadow-xs border border-white/20" style={{ backgroundColor: project.color || '#6366f1' }}>
-            <FolderKanban className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight truncate">{project.name}</h1>
-            {project.description && <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-xl mt-0.5">{project.description}</p>}
+      {/* Top Breadcrumb & Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#333438] pb-3">
+        <div className="flex items-center gap-2 text-sm text-[#8a8c91]">
+          <span>Team Space</span>
+          <span>/</span>
+          <div className="flex items-center gap-1.5 text-white font-semibold">
+            <FolderKanban className="h-4 w-4 text-indigo-400" />
+            <span>{project.name}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-2">
           {isAdmin && (
             <button
               onClick={() => setShowAiDraft(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-90 transition shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-90 transition shadow-sm"
             >
-              <Sparkles className="h-3.5 w-3.5" /> <span className="hidden sm:inline">AI Plan</span>
+              <Sparkles className="h-3.5 w-3.5" /> AI Plan
             </button>
           )}
-          <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-input bg-background hover:bg-accent transition">
+          <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md border border-[#333438] bg-[#232426] hover:bg-[#2a2b2e] transition text-[#e5e5e5]">
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
           {isAdmin && (
-            <button onClick={() => setShowSettings(true)} className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-md border border-input bg-background hover:bg-accent transition">
-              <Settings className="h-4 sm:h-3.5 w-4 sm:w-3.5" />
+            <button onClick={() => setShowSettings(true)} className="p-1.5 text-[#8a8c91] hover:text-white rounded-md border border-[#333438] bg-[#232426] transition">
+              <Settings className="h-4 w-4" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 -mx-4 sm:mx-0 px-4 sm:px-0">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={orderedLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
-              {orderedLists.map((l) => (
-                <SortableListTab key={l.id} list={l} active={l.id === activeListId} onSelect={() => setActiveListId(l.id)} onDelete={() => setListToDelete(l)} isAdmin={isAdmin} />
-              ))}
-            </SortableContext>
-          </DndContext>
+      {/* View Navigation Tabs (ClickUp Style) */}
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-[#333438] pb-2 text-xs">
+        <button
+          onClick={() => setActiveTab('channel')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'channel' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+        >
+          <Hash className="h-3.5 w-3.5 text-indigo-400" /> Channel
+        </button>
+        <button
+          onClick={() => setActiveTab('list')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'list' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+        >
+          <ListIcon className="h-3.5 w-3.5 text-indigo-400" /> List
+        </button>
+        <button
+          onClick={() => setActiveTab('board')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'board' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+        >
+          <LayoutGrid className="h-3.5 w-3.5 text-blue-400" /> Board
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'calendar' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+        >
+          <CalendarIcon className="h-3.5 w-3.5 text-orange-400" /> Calendar
+        </button>
+        <button
+          onClick={() => setActiveTab('gantt')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'gantt' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+        >
+          <GanttChart className="h-3.5 w-3.5 text-red-400" /> Gantt
+        </button>
+        <button
+          onClick={() => setActiveTab('table')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'table' ? 'text-white border-b-2 border-indigo-500 bg-[#232426]' : 'text-[#8a8c91] hover:text-white'}`}
+        >
+          <TableIcon className="h-3.5 w-3.5 text-emerald-400" /> Table
+        </button>
+        <button className="flex items-center gap-1 px-3 py-1.5 text-[#8a8c91] hover:text-white font-medium transition">
+          <Plus className="h-3.5 w-3.5" /> View
+        </button>
+      </div>
 
-          {isAdmin && (
-            adding ? (
-              <div className="flex items-center gap-1.5 pl-1">
-                <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddList(); if (e.key === 'Escape') { setAdding(false); setNewName(''); } }} placeholder="List name..." disabled={savingList} className="h-8 rounded-md border border-input bg-background px-2.5 text-xs outline-none focus:border-indigo-500" />
-                <button onClick={handleAddList} disabled={savingList || !newName.trim()} className="h-8 inline-flex items-center bg-indigo-600 text-white px-2.5 rounded-md text-xs hover:bg-indigo-500 disabled:opacity-50">
-                  {savingList ? 'Adding…' : 'Add'}
-                </button>
-                <button onClick={() => { setAdding(false); setNewName(''); }} className="p-1.5 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
-              </div>
-            ) : (
-              <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition border border-dashed border-border/80">
-                <Plus className="h-3.5 w-3.5" /> New List
+      {/* Lists Horizontal Sub-bar */}
+      <div className="flex items-center gap-2 overflow-x-auto py-1">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
+            {orderedLists.map((l) => (
+              <SortableListTab key={l.id} list={l} active={l.id === activeListId} onSelect={() => setActiveListId(l.id)} onDelete={() => setListToDelete(l)} isAdmin={isAdmin} />
+            ))}
+          </SortableContext>
+        </DndContext>
+
+        {isAdmin && (
+          adding ? (
+            <div className="flex items-center gap-1.5 pl-1">
+              <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddList(); if (e.key === 'Escape') { setAdding(false); setNewName(''); } }} placeholder="List name..." disabled={savingList} className="h-7 rounded border border-[#333438] bg-[#232426] px-2 text-xs outline-none text-white focus:border-indigo-500" />
+              <button onClick={handleAddList} disabled={savingList || !newName.trim()} className="h-7 bg-indigo-600 text-white px-2.5 rounded text-xs hover:bg-indigo-500 disabled:opacity-50">
+                {savingList ? 'Adding…' : 'Add'}
               </button>
-            )
-          )}
-        </div>
-
-        {activeListId && (
-          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
-            <button onClick={() => setViewMode('list')} className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md ${viewMode === 'list' ? 'bg-background shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}>
-              <ListFilter className="h-3.5 w-3.5" /> List
+              <button onClick={() => { setAdding(false); setNewName(''); }} className="p-1 text-[#8a8c91] hover:text-white"><X className="h-3.5 w-3.5" /></button>
+            </div>
+          ) : (
+            <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium text-[#8a8c91] hover:bg-[#2a2b2e] transition border border-dashed border-[#333438]">
+              <Plus className="h-3.5 w-3.5" /> New List
             </button>
-            <button onClick={() => setViewMode('board')} className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md ${viewMode === 'board' ? 'bg-background shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}>
-              <LayoutGrid className="h-3.5 w-3.5" /> Board
-            </button>
-          </div>
+          )
         )}
       </div>
 
-      {/* Task Area */}
-      {activeListId ? (
+      {/* Main Content Area based on Tab */}
+      {activeTab === 'list' && activeListId ? (
         <div className="mt-2">
-          {viewMode === 'list' ? (
-            <TaskList listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
-          ) : (
-            <BoardView listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
-          )}
+          <TaskList listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
+        </div>
+      ) : activeTab === 'board' && activeListId ? (
+        <div className="mt-2">
+          <BoardView listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
+        </div>
+      ) : activeTab === 'channel' ? (
+        <div className="p-8 text-center text-[#8a8c91] bg-[#232426] rounded-lg border border-[#333438]">
+          <p className="text-sm font-semibold text-white">Project Chat & Channel Feed</p>
+          <p className="text-xs mt-1">Real-time team communication for this project space.</p>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 p-12 text-center">
-          <p className="text-sm font-semibold text-foreground">No lists found</p>
-          {isAdmin && (
-            <button onClick={() => setAdding(true)} className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-500">
-              <Plus className="h-3.5 w-3.5" /> Create list
-            </button>
-          )}
+        <div className="p-12 text-center text-[#8a8c91] bg-[#232426] rounded-lg border border-[#333438]">
+          <p className="text-sm font-semibold text-white">Coming Soon</p>
+          <p className="text-xs mt-1">The {activeTab} view is currently under development.</p>
         </div>
       )}
 
-      {/* AI Task Planner */}
+      {/* Modals & Dialogs */}
       <AiDraftModal
         open={showAiDraft}
         onClose={() => setShowAiDraft(false)}
@@ -394,50 +433,27 @@ export default function ProjectDetailClient() {
         onDone={(listId) => setActiveListId(listId)}
       />
 
-      {/* Delete List Confirmation */}
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        taskId={selectedTask?.id ?? ''}
+        listId={selectedTask?.listId ?? ''}
+        open={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        isAdmin={isAdmin}
+      />
+
       <AlertDialog open={!!listToDelete} onOpenChange={(open) => { if (!open && !deleting) setListToDelete(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-[#232426] border-[#333438] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete list</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete <span className="font-semibold">"{listToDelete?.name}"</span>? All tasks inside will be permanently removed.</AlertDialogDescription>
+            <AlertDialogDescription className="text-[#8a8c91]">Are you sure you want to delete <span className="font-semibold text-white">"{listToDelete?.name}"</span>? All tasks inside will be permanently removed.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDeleteList(); }} disabled={deleting} className="bg-red-600 hover:bg-red-700">{deleting ? 'Deleting…' : 'Delete'}</AlertDialogAction>
+            <AlertDialogCancel disabled={deleting} className="bg-[#2a2b2e] text-white border-[#333438] hover:bg-[#333438]">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDeleteList(); }} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">{deleting ? 'Deleting…' : 'Delete'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Project Settings Modal (Admin Only) */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowSettings(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl border border-border space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-bold text-foreground">Project Settings</h2>
-              <button onClick={() => setShowSettings(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1.5">Project Name</label>
-              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-indigo-500 outline-none" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1.5">Description</label>
-              <textarea value={projectDesc} onChange={(e) => setProjectDesc(e.target.value)} rows={3} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-indigo-500 outline-none resize-none" />
-            </div>
-
-            <div className="pt-4 border-t border-border/60 flex items-center justify-between">
-              <button onClick={handleDeleteProject} disabled={deletingProject} className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 flex items-center gap-1">
-                {deletingProject ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Delete Project
-              </button>
-              <button onClick={handleUpdateProject} disabled={updatingProject || !projectName.trim()} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
-                {updatingProject ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
