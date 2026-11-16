@@ -101,7 +101,7 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
         <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 custom-scrollbar">
 
           {/* Top Nav Items */}
-          <NavItem icon={FileText} label="New" href="#" />
+          <NavItem icon={FileText} label="New" href="/ai" />
 
           {/* My Tasks (Links to actual page) */}
           <NavItem icon={User} label="My Tasks" href="/my-tasks" active={pathname === '/my-tasks'} expandable />
