@@ -94,6 +94,11 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
   const [showAttachments, setShowAttachments] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const assigneeRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
@@ -285,26 +290,40 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
     }
   };
 
-  const handleDeleteSubtask = async (subtask: Task) => {
-    setTask(prev => prev ? { ...prev, subtasks: prev.subtasks?.filter(st => st.id !== subtask.id) } : prev);
-    try {
-      await deleteTask(subtask.id, listId);
-    } catch {
-      setTask(prev => prev ? { ...prev, subtasks: [...(prev.subtasks ?? []), subtask] } : prev);
-      toast.error('Failed to delete subtask');
-    }
+  const handleDeleteSubtask = (subtask: Task) => {
+    setConfirmDialog({
+      title: 'Delete Subtask',
+      message: `Are you sure you want to delete "${subtask.title}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setTask(prev => prev ? { ...prev, subtasks: prev.subtasks?.filter(st => st.id !== subtask.id) } : prev);
+        try {
+          await deleteTask(subtask.id, listId);
+          toast.success('Subtask deleted');
+        } catch {
+          setTask(prev => prev ? { ...prev, subtasks: [...(prev.subtasks ?? []), subtask] } : prev);
+          toast.error('Failed to delete subtask');
+        }
+      },
+    });
   };
 
-  const handleDeleteTask = async () => {
+  const handleDeleteTask = () => {
     if (!task || !isAdmin) return;
-    if (!confirm('Delete this task and all subtasks/comments?')) return;
-    try {
-      await deleteTask(task.id, listId);
-      toast.success('Task deleted');
-      onClose();
-    } catch {
-      toast.error('Failed to delete task');
-    }
+    setConfirmDialog({
+      title: 'Delete Task',
+      message: 'Are you sure you want to delete this task and all its subtasks and comments? This action cannot be undone.',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await deleteTask(task.id, listId);
+          toast.success('Task deleted');
+          onClose();
+        } catch {
+          toast.error('Failed to delete task');
+        }
+      },
+    });
   };
 
   const handleFileUpload = async (uploadedFiles: { url: string }[]) => {
@@ -687,8 +706,9 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                         <input
                           type="checkbox"
                           checked={st.status === 'DONE'}
-                          onChange={() => handleToggleSubtask(st)}
-                          className="h-3.5 w-3.5 rounded border-[#555] accent-indigo-500 cursor-pointer"
+                          onChange={() => isAdmin && handleToggleSubtask(st)}
+                          disabled={!isAdmin}
+                          className={`h-3.5 w-3.5 rounded border-[#555] accent-indigo-500 ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-60'}`}
                         />
                         <span className={`text-xs flex-1 truncate ${st.status === 'DONE' ? 'line-through text-[#555]' : 'text-[#e5e5e5]'}`}>
                           {st.title}
@@ -783,7 +803,7 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
                               <span className="text-[10px] text-[#555]">
                                 {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
-                              {isOwner && !isEditing && (
+                              {isAdmin && isOwner && !isEditing && (
                                 <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 ml-auto transition">
                                   <button
                                     onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.text); }}
@@ -826,36 +846,72 @@ export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin
 
               {/* Comment input */}
               <div className="border-t border-[#333438] p-3">
-                <div className="flex items-center gap-2 text-[11px] text-[#8a8c91] mb-2 px-1">
-                  <button className="font-semibold text-white border-b border-indigo-500 pb-0.5">Comment</button>
-                </div>
-                <div className="relative">
-                  <textarea
-                    ref={commentInputRef}
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAddComment();
-                      }
-                    }}
-                    placeholder="Write a comment..."
-                    rows={2}
-                    className="w-full bg-[#1e1f21] border border-[#333438] rounded-lg p-2.5 pr-10 text-xs text-white outline-none resize-none focus:border-indigo-500 placeholder:text-[#555] transition"
-                  />
-                  <button
-                    onClick={handleAddComment}
-                    disabled={postingComment || !newComment.trim()}
-                    className="absolute right-2 bottom-2.5 p-1 text-indigo-400 hover:text-indigo-300 disabled:text-[#555] transition"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                </div>
+                {isAdmin ? (
+                  <>
+                    <div className="flex items-center gap-2 text-[11px] text-[#8a8c91] mb-2 px-1">
+                      <button className="font-semibold text-white border-b border-indigo-500 pb-0.5">Comment</button>
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        ref={commentInputRef}
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddComment();
+                          }
+                        }}
+                        placeholder="Write a comment..."
+                        rows={2}
+                        className="w-full bg-[#1e1f21] border border-[#333438] rounded-lg p-2.5 pr-10 text-xs text-white outline-none resize-none focus:border-indigo-500 placeholder:text-[#555] transition"
+                      />
+                      <button
+                        onClick={handleAddComment}
+                        disabled={postingComment || !newComment.trim()}
+                        className="absolute right-2 bottom-2.5 p-1 text-indigo-400 hover:text-indigo-300 disabled:text-[#555] transition"
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-[#555] text-center py-2">Read-only view — only admins can comment</p>
+                )}
               </div>
             </div>
           </div>
         ) : null}
+
+        {/* Confirmation Dialog */}
+        {confirmDialog && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center" onClick={() => setConfirmDialog(null)}>
+            <div className="absolute inset-0 bg-black/50 rounded-xl" />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-[380px] bg-[#232426] border border-[#333438] rounded-xl shadow-2xl p-5 space-y-4 animate-in fade-in-0 zoom-in-95 duration-150"
+            >
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-bold text-white">{confirmDialog.title}</h3>
+                <p className="text-xs text-[#8a8c91] leading-relaxed">{confirmDialog.message}</p>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  onClick={() => setConfirmDialog(null)}
+                  className="px-3 py-1.5 text-xs font-medium text-[#8a8c91] hover:text-white bg-[#2a2b2e] border border-[#333438] rounded-lg hover:border-[#555] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDialog.onConfirm}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

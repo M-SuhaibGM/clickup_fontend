@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUserStore } from '@/store/userStore';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import Image from 'next/image';
 import {
   Loader2,
   Building2,
@@ -170,12 +171,13 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
         aria-modal="true"
         aria-labelledby="new-workspace-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl bg-card shadow-2xl border border-border overflow-hidden"
+        style={{ width: '70vw', height: '70vh', maxWidth: '70vw' }}
+        className="flex flex-col rounded-2xl bg-card shadow-2xl border border-border overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
-          <div className="flex items-center gap-3">
-            <Building2 className="h-5 w-5 text-indigo-500" />
+        <div className="flex items-center justify-between px-8 pt-6 pb-2 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Image src="/icon.png" alt="ClickUp" width={28} height={28} />
             <h2 id="new-workspace-title" className="text-lg font-bold text-foreground">
               ClickUp
             </h2>
@@ -185,19 +187,19 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
             onClick={onClose}
             disabled={creating}
             aria-label="Close"
-            className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-accent transition disabled:opacity-50"
+            className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-accent transition disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-6 pt-4 pb-6 min-h-[320px]">
+        <div className="flex-1 flex flex-col justify-center px-8 py-6 overflow-y-auto">
           {/* Step 1: Workspace Name */}
           {step === 'name' && (
             <form onSubmit={handleNameNext} className="space-y-5">
               <div>
-                <h3 className="text-xl font-bold text-foreground mb-1">
+                <h3 className="text-2xl font-bold text-foreground mb-1">
                   Create a new Workspace
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -250,11 +252,11 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
           {/* Step 2: Purpose */}
           {step === 'purpose' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-bold text-foreground">
+              <h3 className="text-2xl font-bold text-foreground">
                 What will you use this Workspace for?
               </h3>
 
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 {PURPOSE_OPTIONS.map((opt) => {
                   const Icon = opt.icon;
                   const selected = purpose === opt.label;
@@ -263,13 +265,13 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
                       key={opt.label}
                       type="button"
                       onClick={() => handlePurposeSelect(opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-2.5 py-5 px-4 rounded-xl border-2 text-sm font-medium transition-all ${
+                      className={`flex-1 flex flex-col items-center gap-3 py-7 px-6 rounded-xl border-2 text-base font-medium transition-all ${
                         selected
                           ? 'border-indigo-500 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
                           : 'border-border hover:border-indigo-300 hover:bg-accent text-foreground'
                       }`}
                     >
-                      <Icon className="h-6 w-6" />
+                      <Icon className="h-7 w-7" />
                       {opt.label}
                     </button>
                   );
@@ -281,7 +283,7 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
           {/* Step 3: What to manage */}
           {step === 'manage' && !creating && (
             <div className="space-y-5">
-              <h3 className="text-xl font-bold text-foreground">
+              <h3 className="text-2xl font-bold text-foreground">
                 What would you like to manage?
               </h3>
 
@@ -321,7 +323,7 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
           {step === 'invite' && (
             <div className="space-y-5">
               <div>
-                <h3 className="text-xl font-bold text-foreground">
+                <h3 className="text-2xl font-bold text-foreground">
                   Invite people to your Workspace:
                 </h3>
               </div>
@@ -365,7 +367,7 @@ export default function NewWorkspaceModal({ open, onClose }: Props) {
         </div>
 
         {/* Footer with progress and navigation */}
-        <div className="px-6 pb-5">
+        <div className="px-8 pb-6 shrink-0">
           {/* Progress bar */}
           <div className="h-1 w-full bg-border rounded-full mb-4 overflow-hidden">
             <div

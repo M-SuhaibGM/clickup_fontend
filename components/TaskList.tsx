@@ -7,7 +7,7 @@ import { ChevronDown, Plus, SlidersHorizontal, Filter, CheckCircle2, UserCircle,
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
   PointerSensor,
   TouchSensor,
   useSensor,
@@ -15,11 +15,31 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  DragOverEvent,
+  useDroppable,
 } from '@dnd-kit/core';
 import type { Task } from '@/types/task';
 import { toast } from 'sonner';
 
 const EMPTY_TASKS: never[] = [];
+
+const STATUS_DROP_HIGHLIGHT: Record<string, string> = {
+  TODO: 'ring-1 ring-blue-500/40 bg-blue-500/5',
+  IN_PROGRESS: 'ring-1 ring-amber-500/40 bg-amber-500/5',
+  DONE: 'ring-1 ring-green-500/40 bg-green-500/5',
+};
+
+function StatusGroupDroppable({ status, isOver, children }: { status: string; isOver: boolean; children: React.ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: `status-${status}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mb-2 transition-all duration-200 rounded ${isOver ? STATUS_DROP_HIGHLIGHT[status] ?? 'ring-1 ring-indigo-500/40 bg-indigo-500/5' : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
   const tasks = useTaskStore((s) => s.tasksByList[listId] ?? EMPTY_TASKS);
@@ -32,6 +52,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [overStatus, setOverStatus] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -61,24 +82,68 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
     if (task) setActiveTask(task);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveTask(null);
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over, active } = event;
+    if (!over) { setOverStatus(null); return; }
 
     const draggedTask = tasks.find((t) => t.id === active.id);
-    const overTask = tasks.find((t) => t.id === over.id);
-    if (!draggedTask || !overTask) return;
+    if (!draggedTask) { setOverStatus(null); return; }
 
-    const mainTasks = tasks.filter((t) => !t.parentId);
-    const subtasks = tasks.filter((t) => t.parentId);
+    const overId = String(over.id);
+    let targetStatus: string | null = null;
+
+    if (overId.startsWith('status-')) {
+      targetStatus = overId.replace('status-', '');
+    } else {
+      const overTask = tasks.find((t) => t.id === over.id);
+      if (overTask) targetStatus = overTask.status;
+    }
+
+    setOverStatus(targetStatus && targetStatus !== draggedTask.status ? targetStatus : null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveTask(null);
+    setOverStatus(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const draggedTask = tasks.find((t) => t.id === active.id);
+    if (!draggedTask) return;
+
+    const overId = String(over.id);
+
+    // Dropped on a status group container
+    if (overId.startsWith('status-')) {
+      const newStatus = overId.replace('status-', '') as Task['status'];
+      if (draggedTask.status === newStatus) return;
+
+      const updated = tasks.map((t) =>
+        t.id === draggedTask.id ? { ...t, status: newStatus } : t
+      );
+      setTasks(listId, updated);
+      try {
+        await updateTask(draggedTask.id, listId, { status: newStatus });
+        toast.success(`Moved to ${newStatus.replace('_', ' ')}`);
+      } catch {
+        toast.error('Failed to move task');
+        fetchTasks(listId);
+      }
+      return;
+    }
+
+    // Dropped on another task
+    if (active.id === over.id) return;
+    const overTask = tasks.find((t) => t.id === over.id);
+    if (!overTask) return;
 
     if (draggedTask.status === overTask.status) {
-      // Reorder within same status group
       if (!isAdmin) {
         toast.error('Only admins can reorder tasks');
         return;
       }
+      const mainTasks = tasks.filter((t) => !t.parentId);
+      const subtasks = tasks.filter((t) => t.parentId);
       const oldIndex = mainTasks.findIndex((t) => t.id === active.id);
       const newIndex = mainTasks.findIndex((t) => t.id === over.id);
       if (oldIndex === -1 || newIndex === -1) return;
@@ -86,7 +151,6 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
       setTasks(listId, [...reordered, ...subtasks]);
       reorderTasks(listId, [...reordered, ...subtasks]);
     } else {
-      // Move to different status group
       const newStatus = overTask.status;
       const updated = tasks.map((t) =>
         t.id === draggedTask.id ? { ...t, status: newStatus } : t
@@ -102,16 +166,12 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
     }
   };
 
-  // Collect all sortable IDs across all groups so DndContext can find items across groups
-  const allSortableIds = useMemo(() => {
-    return Object.values(groupedTasks).flatMap((group) => group.map((t) => t.id));
-  }, [groupedTasks]);
-
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="w-full bg-[#1e1f21] rounded-lg border border-[#333438] overflow-hidden">
@@ -147,7 +207,7 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
           </div>
 
           {Object.entries(groupedTasks).map(([status, groupTasks]) => (
-            <div key={status} className="mb-2">
+            <StatusGroupDroppable key={status} status={status} isOver={overStatus === status}>
               <div className="flex items-center justify-between px-3 py-1.5 bg-[#232426]/60 border-b border-[#333438]">
                 <div className="flex items-center gap-2">
                   <ChevronDown className="h-3.5 w-3.5 text-[#8a8c91]" />
@@ -163,7 +223,13 @@ export default function TaskList({ listId, onTaskClick, isAdmin }: any) {
                   <TaskRow key={t.id} task={t} allTasks={tasks} onClick={() => onTaskClick(t)} />
                 ))}
               </SortableContext>
-            </div>
+
+              {groupTasks.length === 0 && (
+                <div className="px-3 py-4 text-center text-xs text-[#8a8c91]">
+                  Drop tasks here
+                </div>
+              )}
+            </StatusGroupDroppable>
           ))}
 
           {isAdmin && adding && (
