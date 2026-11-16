@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation'; // ← Add useRouter
+import { useRouter } from 'next/navigation';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { api } from '@/lib/api';
-import { Skeleton } from '@/components/ui/skeleton';
+import { TaskListSkeleton } from '@/components/skeletons';
 import { Calendar, CheckSquare, ListTodo, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -64,21 +64,7 @@ export default function MyTasksPage() {
   };
 
   if (loading) {
-    return (
-      <div className="p-4 sm:p-8 max-w-7xl mx-auto">
-        <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">My Tasks</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-48 rounded-xl border border-border bg-card p-4">
-              <Skeleton className="h-4 w-1/3 mb-4" />
-              <Skeleton className="h-6 w-3/4 mb-4" />
-              <Skeleton className="h-4 w-full mb-2" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <TaskListSkeleton />;
   }
 
   return (

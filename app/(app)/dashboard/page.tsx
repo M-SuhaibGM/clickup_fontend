@@ -1,25 +1,33 @@
 'use client';
 
 import Link from 'next/link';
+import { Suspense, useState, useEffect } from 'react';
 import { useProjectStore } from '@/store/projectStore';
 import { useAuthStore } from '@/store/authStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { 
-  Calendar as CalendarIcon, 
-  LayoutGrid, 
-  Clock, 
-  CheckCircle2, 
-  Users, 
-  Plus, 
+import { DashboardSkeleton } from '@/components/skeletons';
+import {
+  Calendar as CalendarIcon,
+  LayoutGrid,
+  Clock,
+  CheckCircle2,
+  Users,
+  Plus,
   ArrowRight,
   TrendingUp,
   FileText
 } from 'lucide-react';
 
-export default function OverviewPage() {
+function DashboardContent() {
   const projects = useProjectStore((s) => s.projects);
-  const user = useAuthStore((s) => s.user);
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <div className="min-h-screen bg-[#1e1f21] text-white p-6 md:p-8 overflow-y-auto">
@@ -159,5 +167,13 @@ export default function OverviewPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function OverviewPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

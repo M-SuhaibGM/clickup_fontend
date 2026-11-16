@@ -6,8 +6,8 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
 import InviteMemberModal from '@/components/InviteMemberModal';
+import { MembersSkeleton } from '@/components/skeletons';
 import { Users, Plus, Mail, Shield, User as UserIcon, Search, Trash2, ChevronDown, Briefcase } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import {
@@ -94,6 +94,10 @@ export default function MembersPage() {
   // Check if current user is an Admin
   const isAdmin = members.find((m) => m.user.id === currentUser?.id)?.role === 'ADMIN';
 
+  if (loading) {
+    return <MembersSkeleton />;
+  }
+
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto w-full">
       {/* Header */}
@@ -150,19 +154,7 @@ export default function MembersPage() {
           <div className="col-span-2 text-right">Actions</div>
         </div>
 
-        {loading ? (
-          <div className="divide-y divide-border">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="p-4 sm:px-6 sm:py-4 flex items-center gap-4">
-                <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-48" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredMembers.length === 0 ? (
+        {filteredMembers.length === 0 ? (
           <div className="p-8 sm:p-12 text-center text-muted-foreground text-sm">
             No members found matching your filters.
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -43,10 +43,22 @@ import {
   ExternalLink,
   ChevronRight,
   LogOut,
+  Calendar, // Added Calendar icon
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: () => void; onAiChatClick?: () => void }) {
   const router = useRouter();
+  const pathname = usePathname(); // Get current path
   const user = useAuthStore((s) => s.user);
 
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspaceStore();
@@ -54,6 +66,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [wsMenuOpen, setWsMenuOpen] = useState(false);
   const [wsModalOpen, setWsModalOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
   const wsMenuRef = useRef<HTMLDivElement>(null);
@@ -67,7 +80,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const handleLogout = async () => {
+  const confirmLogout = async () => {
     await logout();
     useProjectStore.getState().clear();
     router.replace('/login');
@@ -86,7 +99,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
     <>
       <header className="h-9 shrink-0 bg-[#1e1f21] flex items-center justify-between px-3 text-[#e5e5e5] select-none z-[100]">
 
-        {/* LEFT: Workspace Switcher */}
+        {/* LEFT: Workspace Switcher & Planner Link */}
         <div className="flex items-center gap-2 flex-1">
           <button onClick={onMenuClick} className="md:hidden p-1.5 bg-[#2a2b2e] rounded text-[#8a8c91] hover:text-white transition">
             <Menu className="h-5 w-5" />
@@ -95,8 +108,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
           <div className="relative" ref={wsMenuRef}>
             <button
               onClick={() => setWsMenuOpen(!wsMenuOpen)}
-              // UPDATED CLASSNAME HERE:
-              className="flex items-center gap-2 bg-[#2a2b2e] border border-[#333438] hover:bg-[#333438] px-2 py-0.5 rounded-md  mt-1 transition-colors"
+              className="flex items-center gap-2 bg-[#2a2b2e] border border-[#333438] hover:bg-[#333438] px-2 py-0.5 rounded-md mt-1 transition-colors"
             >
               <div className="h-6 w-6 rounded bg-[#1bb5a5] text-white flex items-center justify-center text-[11px] font-bold">
                 {getInitials(activeWorkspace?.name)}
@@ -107,10 +119,9 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
               <ChevronDown className="h-3.5 w-3.5 text-[#8a8c91]" />
             </button>
 
-            {/* Workspace Dropdown (Kept from previous step) */}
+            {/* Workspace Dropdown */}
             {wsMenuOpen && (
               <div className="absolute top-full left-0 mt-2 w-[320px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                {/* ... Workspace Dropdown Content ... */}
                 <div className="p-4 pb-3">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="h-10 w-10 rounded-lg bg-[#1bb5a5] text-white flex items-center justify-center text-lg font-bold shrink-0">
@@ -162,9 +173,22 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
               </div>
             )}
           </div>
+
+          {/* NEW: Calendar/Planner Icon Link */}
+          <Link 
+            href="/planner" 
+            className={`p-1.5 rounded-md transition-colors mt-1 ${
+              pathname === '/planner' 
+                ? 'bg-[#2a2b2e] text-white border border-[#333438]' 
+                : 'text-[#8a8c91] hover:text-white hover:bg-[#2a2b2e]'
+            }`}
+            title="Planner"
+          >
+            <Calendar className="h-4 w-4" />
+          </Link>
         </div>
 
-        {/* CENTER: Global Search Bar (ClickUp Style) */}
+        {/* CENTER: Global Search Bar */}
         <div className="flex-1 flex justify-center hidden md:flex">
           <div onClick={triggerSearch} className="flex items-center w-full max-w-[440px] bg-[#2a2b2e] border border-[#333438] hover:border-[#444548] rounded-full h-8 pl-3 pr-1 transition-colors cursor-text group">
             <Search className="h-3.5 w-3.5 text-[#8a8c91] mr-2 shrink-0" />
@@ -186,7 +210,7 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
           <div className="ml-1"><ThemeToggle /></div>
           <div className="h-4 w-px bg-[#333438] mx-1" />
 
-          {/* ─── USER ACTION MENU ─── */}
+          {/* USER ACTION MENU */}
           <div className="relative" ref={userMenuRef}>
             <button onClick={() => setUserMenuOpen((o) => !o)} className="flex items-center gap-1.5 rounded hover:bg-[#2a2b2e] p-1 transition ml-1">
               {user?.avatar ? (
@@ -199,10 +223,8 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
             </button>
 
             {userMenuOpen && (
-              // Changed to flex-col to handle fixed header/footer and scrollable middle
               <div className="absolute right-0 mt-2 w-[300px] bg-[#1e1f21] border border-[#333438] rounded-xl shadow-2xl z-50 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150 max-h-[85vh] overflow-hidden">
-
-                {/* 1. FIXED HEADER (Profile & Set Status) */}
+                {/* FIXED HEADER */}
                 <div className="p-4 pb-2 shrink-0 border-b border-[#333438]">
                   <div className="flex items-center gap-3 mb-3">
                     {user?.avatar ? (
@@ -225,11 +247,8 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
                   </button>
                 </div>
 
-                {/* 2. SCROLLABLE MIDDLE SECTION */}
-                {/* custom-scrollbar class added to keep it looking thin and dark */}
+                {/* SCROLLABLE MIDDLE SECTION */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-
-                  {/* Main Menu Items */}
                   <div className="px-2 py-2">
                     <button className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-[#2a2b2e] rounded-md transition-colors group">
                       <div className="flex items-center gap-3"><VolumeX className="h-4 w-4 text-[#8a8c91]" /><span className="text-[13px] text-[#e5e5e5]">Mute notifications</span></div>
@@ -260,7 +279,6 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
 
                   <div className="h-px bg-[#333438] w-full" />
 
-                  {/* Personal Tools */}
                   <div className="px-2 py-2">
                     <p className="px-2 text-[10px] uppercase tracking-wider font-bold text-[#8a8c91] mb-1">Personal Tools</p>
                     {[
@@ -281,17 +299,21 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
                       </button>
                     ))}
                   </div>
-
                 </div>
 
-                {/* 3. FIXED FOOTER (Sign Out) */}
+                {/* FIXED FOOTER */}
                 <div className="p-2 border-t border-[#333438] shrink-0 bg-[#1e1f21]">
-                  <button onClick={handleLogout} className="w-full text-left px-2 py-2 text-[13px] text-red-400 hover:bg-[#2a2b2e] hover:text-red-300 rounded-md transition-colors flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      setLogoutDialogOpen(true);
+                    }} 
+                    className="w-full text-left px-2 py-2 text-[13px] text-red-400 hover:bg-[#2a2b2e] hover:text-red-300 rounded-md transition-colors flex items-center gap-2"
+                  >
                     <LogOut className="h-4 w-4" />
                     Sign out
                   </button>
                 </div>
-
               </div>
             )}
           </div>
@@ -299,6 +321,29 @@ export default function Topbar({ onMenuClick, onAiChatClick }: { onMenuClick?: (
       </header>
 
       <NewWorkspaceModal open={wsModalOpen} onClose={() => setWsModalOpen(false)} />
+
+      {/* LOGOUT CONFIRMATION DIALOG */}
+      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <AlertDialogContent className="bg-[#1e1f21] border-[#333438] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#8a8c91]">
+              You will need to sign in again to access your workspace.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-[#2a2b2e] border-[#333438] text-white hover:bg-[#333438] hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmLogout}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
