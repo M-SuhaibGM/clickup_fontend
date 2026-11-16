@@ -140,3 +140,115 @@
     @apply font-sans;
   }
 }
+
+/* ClickUp AI Gradient Button */
+.ai-gradient-btn {
+  position: relative;
+  background: #2a2b2e;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: all 0.3s ease;
+}
+
+/* The animated gradient border */
+.ai-gradient-btn::before {
+  content: '';
+  position: absolute;
+  top: -1px; right: -1px; bottom: -1px; left: -1px;
+  z-index: -1;
+  background: linear-gradient(90deg, #ff4b4b, #ff9900, #ff00cc, #3333ff, #00ccff);
+  background-size: 300% 300%;
+  border-radius: 9999px;
+  animation: gradientShift 3s ease infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* On hover, show the gradient border and animate */
+.ai-gradient-btn:hover::before {
+  opacity: 1;
+}
+
+/* Rotate the AI icon on hover */
+.ai-gradient-btn:hover .ai-icon {
+  animation: spinOnce 1s ease-in-out;
+}
+
+/* Keyframes */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spinOnce {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* ClickUp AI Gradient Button */
+.ai-gradient-btn {
+  position: relative;
+  background: #2a2b2e; /* Matches the search bar bg */
+  border-radius: 9999px;
+  border: 1px solid #444548; /* Default grey border */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1; /* Establish stacking context */
+}
+
+/* The animated gradient border */
+.ai-gradient-btn::before {
+  content: '';
+  position: absolute;
+  top: -1px; right: -1px; bottom: -1px; left: -1px;
+  z-index: -1;
+  background: linear-gradient(90deg, #ff4b4b, #ff9900, #ff00cc, #3333ff, #00ccff, #ff4b4b);
+  background-size: 300% 300%;
+  border-radius: 9999px;
+  animation: gradientShift 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* On hover, show the gradient border */
+.ai-gradient-btn:hover::before {
+  opacity: 1;
+}
+
+/* Spin the AI icon on hover */
+.ai-gradient-btn:hover .ai-icon {
+  animation: spinOnce 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Keyframes */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+@keyframes spinOnce {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Custom thin scrollbar for dropdowns */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #444548; /* Dark grey thumb */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #55565a; /* Lighter on hover */
+}
