@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
 import {
   ChevronRight,
+  ChevronsLeft,
   Plus,
   Search,
   Inbox,
@@ -36,7 +37,7 @@ import NewProjectModal from './NewProjectModal';
 import NewWorkspaceModal from './Newworkspacemodal';
 import InviteMemberModal from './InviteMemberModal';
 
-export default function Sidebar() {
+export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -62,14 +63,24 @@ export default function Sidebar() {
       <div className="w-full h-full flex flex-col text-[#e5e5e5] overflow-hidden">
 
         {/* 1. Header */}
-        <div className="px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="px-4 py-3 flex items-center justify-between shrink-0 group/header">
           <h2 className="text-[15px] font-semibold text-white">Home</h2>
-          <button
-            onClick={() => setProjectModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-gray-200 text-black rounded-md text-[13px] font-semibold transition"
-          >
-            <Plus className="h-3.5 w-3.5" /> Create
-          </button>
+          <div className="flex items-center gap-2">
+            {onCollapse && (
+              <button
+                onClick={onCollapse}
+                className="p-1 text-[#8a8c91] hover:text-white rounded hover:bg-[#2a2b2e] opacity-0 group-hover/header:opacity-100 transition-all"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              onClick={() => setProjectModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-gray-200 text-black rounded-md text-[13px] font-semibold transition"
+            >
+              <Plus className="h-3.5 w-3.5" /> Create
+            </button>
+          </div>
         </div>
 
         {/* 2. Search */}

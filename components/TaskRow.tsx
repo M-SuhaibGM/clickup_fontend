@@ -121,7 +121,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
   const [showAssignee, setShowAssignee] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const dropdownPosRef = useRef({ top: 0, left: 0 });
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [prioritySearch, setPrioritySearch] = useState('');
 
@@ -152,14 +152,17 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
 
   const openDropdown = (e: React.MouseEvent, which: 'assignee' | 'date' | 'priority') => {
     e.stopPropagation();
+    e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const widths = { assignee: 280, date: 480, priority: 240 };
+    const heights = { assignee: 300, date: 360, priority: 280 };
     const w = widths[which];
+    const h = heights[which];
     const spaceBelow = window.innerHeight - rect.bottom;
-    setDropdownPos({
-      top: spaceBelow > 380 ? rect.bottom + 4 : Math.max(8, rect.top - 360),
+    dropdownPosRef.current = {
+      top: spaceBelow > h + 8 ? rect.bottom + 4 : Math.max(8, rect.top - h - 4),
       left: Math.min(rect.left, window.innerWidth - w - 16),
-    });
+    };
     closeAll();
     if (which === 'assignee') setShowAssignee(true);
     if (which === 'date') {
@@ -396,8 +399,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showAssignee && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="absolute w-[280px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
-            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            className="fixed w-[280px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden"
+            style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#333438]">
@@ -475,8 +478,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showDatePicker && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="absolute w-[480px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
-            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            className="fixed w-[480px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden"
+            style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
             onClick={e => e.stopPropagation()}
           >
             {/* Start / Due tabs */}
@@ -572,8 +575,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showPriority && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="absolute w-[240px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
-            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            className="fixed w-[240px] bg-[#2a2b2e] border border-[#333438] rounded-lg shadow-2xl overflow-hidden"
+            style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
             onClick={e => e.stopPropagation()}
           >
             <div className="px-3 py-2.5 border-b border-[#333438]">
