@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { User as UserIcon, Mail, Lock, Loader2 } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, Loader2, Camera } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { useUploadThing } from '@/lib/uploadthing';
 import type { User } from '@/types/auth';
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -76,6 +77,24 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [totpEnabled, setTotpEnabled] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const { startUpload, isUploading } = useUploadThing('avatar', {
+    headers: () => ({ Authorization: `Bearer ${useAuthStore.getState().accessToken ?? ''}` }),
+    onClientUploadComplete: (res) => {
+      const url = (res?.[0]?.serverData as { ufsUrl?: string } | undefined)?.ufsUrl;
+      if (url) void save({ avatar: url }, 'Profile picture updated');
+    },
+    onUploadError: (e) => { toast.error(`Upload failed: ${e.message}`); },
+  });
+
+  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return toast.error('Please choose an image file');
+    void startUpload([file]);
+  };
 
   useEffect(() => {
     if (user) {
@@ -132,13 +151,25 @@ export default function ProfilePage() {
               <div className="text-[14px] font-semibold text-(--c-white)">Avatar</div>
               <div className="text-[12px] text-(--c-8a8c91) truncate">{user?.name}</div>
             </div>
-            {user?.avatar ? (
-              <Image src={user.avatar} alt={user.name} width={36} height={36} className="h-9 w-9 rounded-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="h-9 w-9 rounded-full bg-indigo-500 text-white flex items-center justify-center text-sm font-bold">
-                {user?.name?.[0]?.toUpperCase() ?? '?'}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={isUploading}
+              title="Change profile picture"
+              className="group relative h-12 w-12 shrink-0 rounded-full overflow-hidden"
+            >
+              {user?.avatar ? (
+                <Image src={user.avatar} alt={user.name} width={48} height={48} className="h-12 w-12 rounded-full object-cover" referrerPolicy="no-referrer" unoptimized />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-indigo-500 text-white flex items-center justify-center text-lg font-bold">
+                  {user?.name?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              )}
+              <span className={`absolute inset-0 flex items-center justify-center bg-black/55 text-white transition-opacity ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              </span>
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickFile} />
           </div>
 
           <Row label="Full Name">

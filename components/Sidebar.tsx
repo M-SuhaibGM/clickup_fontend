@@ -6,6 +6,8 @@ import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react'
+import { useReminderStore, bucketOf } from '@/store/reminderStore';
+import { useNow } from '@/lib/useNow';
 import {
   ChevronRight,
   ChevronsLeft,
@@ -50,6 +52,11 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+
+  // Inbox badge: reminders whose time has come and aren't cleared
+  const reminders = useReminderStore((s) => s.reminders);
+  const now = useNow(15000);
+  const inboxCount = reminders.filter((r) => bucketOf(r, now) === 'primary').length;
 
   // UI States
   const [query, setQuery] = useState('');
@@ -102,6 +109,7 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
 
           {/* Top Nav Items */}
           <NavItem icon={FileText} label="New" href="/ai" />
+          <NavItem icon={Inbox} label="Inbox" href="/inbox" active={pathname === '/inbox'} badge={inboxCount} />
 
           {/* My Tasks (Links to actual page) */}
           <NavItem icon={User} label="My Tasks" href="/my-tasks" active={pathname === '/my-tasks'} expandable />
@@ -225,7 +233,7 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
 }
 
 // Helper Component
-function NavItem({ icon: Icon, label, href, active, expandable, small, rightText, iconColor }: any) {
+function NavItem({ icon: Icon, label, href, active, expandable, small, rightText, iconColor, badge }: any) {
   return (
     <Link
       href={href}
@@ -236,6 +244,11 @@ function NavItem({ icon: Icon, label, href, active, expandable, small, rightText
         <Icon className={`shrink-0 ${small ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${iconColor || 'text-[color:var(--c-8a8c91)]'} group-hover:text-[color:var(--c-white)] transition-colors`} />
         <span className={`truncate ${small ? 'text-[12px]' : 'text-[13px]'}`}>{label}</span>
       </div>
+      {badge > 0 && (
+        <span className="ml-2 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-semibold leading-4 text-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
       {expandable && <ChevronRight className="h-3 w-3 text-[color:var(--c-8a8c91)]" />}
       {rightText && <span className="text-[10px] text-[color:var(--c-8a8c91)] truncate max-w-[100px]">{rightText}</span>}
     </Link>

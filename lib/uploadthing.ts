@@ -1,8 +1,16 @@
-import { generateUploadButton, generateUploadDropzone } from "@uploadthing/react";
+import { generateUploadButton, generateUploadDropzone, generateReactHelpers } from "@uploadthing/react";
 import type { FileRouter } from "uploadthing/next";
 
 // Define the FileRouter type locally — mirrors backend/src/uploadthing.ts
 export type OurFileRouter = FileRouter & {
+  avatar: {
+    input: {};
+    output: { ufsUrl: string };
+  };
+  clipVideo: {
+    input: {};
+    output: { ufsUrl: string; key: string; size: number };
+  };
   taskAttachment: {
     input: {};
     output: { ufsUrl: string; name: string; size: number };
@@ -17,5 +25,9 @@ export const UploadButton = generateUploadButton<OurFileRouter>({
 });
 
 export const UploadDropzone = generateUploadDropzone<OurFileRouter>({
+  url: UPLOAD_URL,
+});
+
+export const { useUploadThing } = generateReactHelpers<OurFileRouter>({
   url: UPLOAD_URL,
 });

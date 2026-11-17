@@ -12,6 +12,8 @@ import AppRail from './AppRail';
 import AppShellSkeleton from './AppShellSkeleton';
 import { CommandPalette } from './command-palette';
 import AiChatDrawer from './AiChatDrawer';
+import CreateModal from './CreateModal';
+import ReminderAlerts from './ReminderAlerts';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -139,6 +141,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette />
+      <CreateModal />
+      <ReminderAlerts />
       <AiChatDrawer open={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />
     </div>
   );

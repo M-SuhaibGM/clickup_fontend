@@ -8,7 +8,7 @@ export default function PlannerPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   return (
-    <div className="flex flex-col h-full bg-[color:var(--c-121212)] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-(--c-121212) relative overflow-hidden">
       
       {/* Background Grid Pattern */}
       <div 
