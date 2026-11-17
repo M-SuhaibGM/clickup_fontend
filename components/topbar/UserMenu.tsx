@@ -25,6 +25,7 @@ import { logout } from '@/lib/auth';
 import Notepad from '../Notepad';
 import ThemeModal from '../ThemeModal';
 import AiChatDrawer from '../AiChatDrawer';
+import MyWorkDrawer from './MyWorkDrawer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +46,7 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [aiChatDrawerOpen, setAiChatDrawerOpen] = useState(false);
   const [notepadOpen, setNotepadOpen] = useState(false);
+  const [myWorkOpen, setMyWorkOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -140,7 +142,7 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
                 <p className="px-2 text-[10px] uppercase tracking-wider font-bold text-(--c-8a8c91) mb-1">Personal Tools</p>
                 {[
                   { icon: Crosshair, label: 'Create task', hotkey: 'K', action: 'task' },
-                  { icon: Briefcase, label: 'My Work' },
+                  { icon: Briefcase, label: 'My Work', action: 'mywork' },
                   { icon: Clock, label: 'Track Time' },
                   { icon: StickyNote, label: 'Notepad', action: 'notepad' },
                   { icon: VideoIcon, label: 'Record a Clip', hotkey: 'R', action: 'record' },
@@ -150,7 +152,10 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
                   <button
                     key={item.label}
                     onClick={() => {
-                      if (item.action === 'notepad') {
+                      if (item.action === 'mywork') {
+                        setUserMenuOpen(false);
+                        setMyWorkOpen(true);
+                      } else if (item.action === 'notepad') {
                         setUserMenuOpen(false);
                         setNotepadOpen(true);
                       } else if (item.action === 'record') {
@@ -196,6 +201,7 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
       {/* MODALS & DRAWERS */}
       <ThemeModal open={themeModalOpen} onClose={() => setThemeModalOpen(false)} />
       <Notepad open={notepadOpen} onClose={() => setNotepadOpen(false)} />
+      <MyWorkDrawer open={myWorkOpen} onClose={() => setMyWorkOpen(false)} onStandUp={() => { setMyWorkOpen(false); setAiChatDrawerOpen(true); }} />
       <AiChatDrawer open={aiChatDrawerOpen} onClose={() => setAiChatDrawerOpen(false)} />
 
       <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
