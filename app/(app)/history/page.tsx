@@ -29,6 +29,7 @@ const ACTION_ICONS: Record<string, any> = {
 };
 
 const ENTITY_COLORS: Record<string, string> = {
+  space: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10',
   project: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10',
   list: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10',
   task: 'text-orange-500 bg-orange-50 dark:bg-orange-500/10',

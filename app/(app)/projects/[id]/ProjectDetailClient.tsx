@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useListStore } from '@/store/listStore';
 import { useProjectStore } from '@/store/projectStore';
@@ -31,6 +31,8 @@ import AiDraftModal from '@/components/AiDraftModal';
 import TaskList from '@/components/TaskList';
 import BoardView from '@/components/BoardView';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import SpaceIcon from '@/components/SpaceIcon';
+import ChannelView from '@/components/ChannelView';
 import SocketProvider from '@/components/SocketProvider';
 import AppShellSkeleton from '@/components/AppShellSkeleton';
 import {
@@ -134,11 +136,13 @@ function SortableListTab({
 export default function ProjectDetailClient() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'list' | 'board' | 'channel' | 'calendar' | 'gantt' | 'table'>('list');
+  type Tab = 'list' | 'board' | 'channel' | 'calendar' | 'gantt' | 'table';
+  const [activeTab, setActiveTab] = useState<Tab>(searchParams.get('tab') === 'channel' ? 'channel' : 'list');
 
   // Role & Settings
   const currentUser = useAuthStore((s) => s.user);
@@ -207,6 +211,34 @@ export default function ProjectDetailClient() {
     }
     checkRole();
   }, [activeWorkspace, currentUser]);
+
+  // Sidebar links: ?tab=channel opens the channel, ?listId=… opens that list
+  const tabParam = searchParams.get('tab');
+  const listParam = searchParams.get('listId');
+  useEffect(() => {
+    if (tabParam === 'channel') {
+      setActiveTab('channel');
+      return;
+    }
+    setActiveTab((t) => (t === 'channel' ? 'list' : t));
+    if (listParam) setActiveListId(listParam);
+  }, [tabParam, listParam]);
+
+  // Keep the URL in step with the page so the sidebar highlights the right row
+  const syncUrl = (params: Record<string, string>) => {
+    const q = new URLSearchParams(params).toString();
+    router.replace(`/projects/${id}${q ? `?${q}` : ''}`, { scroll: false });
+  };
+  const selectTab = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === 'channel') syncUrl({ tab: 'channel' });
+    else if (activeTab === 'channel') syncUrl(activeListId ? { listId: activeListId } : {});
+  };
+  const selectList = (listId: string) => {
+    setActiveListId(listId);
+    setActiveTab((t) => (t === 'channel' ? 'list' : t));
+    syncUrl({ listId });
+  };
 
   useEffect(() => {
     if (!activeListId && orderedLists.length > 0) setActiveListId(orderedLists[0].id);
@@ -304,7 +336,12 @@ export default function ProjectDetailClient() {
       {/* Top Breadcrumb & Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[color:var(--c-333438)] pb-3">
         <div className="flex items-center gap-2 text-sm text-[color:var(--c-8a8c91)]">
-          <span>Team Space</span>
+          <span className="flex items-center gap-1.5">
+            {project.space && (
+              <SpaceIcon name={project.space.name} icon={project.space.icon} color={project.space.color} size={14} />
+            )}
+            {project.space?.name ?? 'No space'}
+          </span>
           <span>/</span>
           <div className="flex items-center gap-1.5 text-[color:var(--c-white)] font-semibold">
             <FolderKanban className="h-4 w-4 text-indigo-400" />
@@ -335,37 +372,37 @@ export default function ProjectDetailClient() {
       {/* View Navigation Tabs (ClickUp Style) */}
       <div className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--c-333438)] pb-2 text-xs">
         <button
-          onClick={() => setActiveTab('channel')}
+          onClick={() => selectTab('channel')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'channel' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
-          <Hash className="h-3.5 w-3.5 text-indigo-400" /> Channel
+          <Hash className="h-3.5 w-3.5 text-indigo-400" /> {project.channel?.name ?? project.name}
         </button>
         <button
-          onClick={() => setActiveTab('list')}
+          onClick={() => selectTab('list')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'list' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <ListIcon className="h-3.5 w-3.5 text-indigo-400" /> List
         </button>
         <button
-          onClick={() => setActiveTab('board')}
+          onClick={() => selectTab('board')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'board' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <LayoutGrid className="h-3.5 w-3.5 text-blue-400" /> Board
         </button>
         <button
-          onClick={() => setActiveTab('calendar')}
+          onClick={() => selectTab('calendar')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'calendar' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <CalendarIcon className="h-3.5 w-3.5 text-orange-400" /> Calendar
         </button>
         <button
-          onClick={() => setActiveTab('gantt')}
+          onClick={() => selectTab('gantt')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'gantt' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <GanttChart className="h-3.5 w-3.5 text-red-400" /> Gantt
         </button>
         <button
-          onClick={() => setActiveTab('table')}
+          onClick={() => selectTab('table')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'table' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
         >
           <TableIcon className="h-3.5 w-3.5 text-emerald-400" /> Table
@@ -375,12 +412,12 @@ export default function ProjectDetailClient() {
         </button>
       </div>
 
-      {/* Lists Horizontal Sub-bar */}
-      <div className="flex items-center gap-2 overflow-x-auto py-1">
+      {/* Lists Horizontal Sub-bar (not relevant inside the channel) */}
+      <div className={`items-center gap-2 overflow-x-auto py-1 ${activeTab === 'channel' ? 'hidden' : 'flex'}`}>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
             {orderedLists.map((l) => (
-              <SortableListTab key={l.id} list={l} active={l.id === activeListId} onSelect={() => setActiveListId(l.id)} onDelete={() => setListToDelete(l)} isAdmin={isAdmin} />
+              <SortableListTab key={l.id} list={l} active={l.id === activeListId} onSelect={() => selectList(l.id)} onDelete={() => setListToDelete(l)} isAdmin={isAdmin} />
             ))}
           </SortableContext>
         </DndContext>
@@ -412,10 +449,7 @@ export default function ProjectDetailClient() {
           <BoardView listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
         </div>
       ) : activeTab === 'channel' ? (
-        <div className="p-8 text-center text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] rounded-lg border border-[color:var(--c-333438)]">
-          <p className="text-sm font-semibold text-[color:var(--c-white)]">Project Chat & Channel Feed</p>
-          <p className="text-xs mt-1">Real-time team communication for this project space.</p>
-        </div>
+        <ChannelView projectId={id} projectName={project.name} />
       ) : (
         <div className="p-12 text-center text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] rounded-lg border border-[color:var(--c-333438)]">
           <p className="text-sm font-semibold text-[color:var(--c-white)]">Coming Soon</p>

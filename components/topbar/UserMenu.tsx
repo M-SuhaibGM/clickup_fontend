@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
+import { useSpaceStore } from '@/store/spaceStore';
+import { useChannelStore } from '@/store/channelStore';
 import { useCreateModal } from '@/store/createModalStore';
 import { logout } from '@/lib/auth';
 import Notepad from '../Notepad';
@@ -62,6 +64,8 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
   const confirmLogout = async () => {
     await logout();
     useProjectStore.getState().clear();
+    useSpaceStore.getState().clear();
+    useChannelStore.getState().reset();
     router.replace('/login');
   };
 

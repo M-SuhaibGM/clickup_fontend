@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore'; // ← Import
+import { useSpaceStore } from '@/store/spaceStore';
 
 const COLORS = [
   '#6366f1', // indigo
@@ -19,12 +20,16 @@ const COLORS = [
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** Pre-select this space (e.g. when created from a space's "+" button) */
+  defaultSpaceId?: string | null;
 }
 
-export default function NewProjectModal({ open, onClose }: Props) {
+export default function NewProjectModal({ open, onClose, defaultSpaceId }: Props) {
   const router = useRouter();
   const createProject = useProjectStore((s) => s.createProject);
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace); // ← Get active workspace
+  const spaces = useSpaceStore((s) => s.spaces);
+  const [spaceId, setSpaceId] = useState('');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -38,8 +43,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
       setDescription('');
       setColor(COLORS[0]);
       setError(null);
+      const preferred = spaces.find((sp) => sp.id === defaultSpaceId) ?? spaces[0];
+      setSpaceId(preferred?.id ?? '');
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultSpaceId]);
 
   if (!open) return null;
 
@@ -47,6 +55,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
     e.preventDefault();
     if (!name.trim()) return setError('Project name is required');
     if (!activeWorkspace) return setError('No active workspace found');
+    if (!spaceId) return setError('Choose a space for this project');
     
     setSaving(true);
     setError(null);
@@ -54,6 +63,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       // UPDATED: Pass activeWorkspace.id to createProject
       const project = await createProject(activeWorkspace.id, { 
         name: name.trim(), 
+        spaceId,
         description: description.trim() || undefined, 
         color 
       });
@@ -83,6 +93,23 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label className="block text-xs font-semibold text-foreground mb-1.5">Space</label>
+            {spaces.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Create a space first — every project lives inside one.</p>
+            ) : (
+              <select
+                value={spaceId}
+                onChange={(e) => setSpaceId(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none transition"
+              >
+                {spaces.map((sp) => (
+                  <option key={sp.id} value={sp.id}>{sp.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div>
             <label className="block text-xs font-semibold text-foreground mb-1.5">Name</label>
             <input
               autoFocus
@@ -92,6 +119,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
               placeholder="e.g. Marketing Site Redesign"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none transition"
             />
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              A channel with the same name is created for this project automatically.
+            </p>
           </div>
 
           <div>
@@ -141,7 +171,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || spaces.length === 0}
               className="flex-1 rounded-lg bg-linear-to-r from-indigo-600 to-violet-600 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg disabled:opacity-60 transition"
             >
               {saving ? 'Creating…' : 'Create Project'}

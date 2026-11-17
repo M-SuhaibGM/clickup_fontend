@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useSpaceStore } from '@/store/spaceStore';
+import { useChannelStore } from '@/store/channelStore';
 import Sidebar from './Sidebar';
 import SidebarDrawer from './SidebarDrawer';
 import Topbar from './Topbar';
@@ -14,12 +16,14 @@ import { CommandPalette } from './command-palette';
 import AiChatDrawer from './AiChatDrawer';
 import CreateModal from './CreateModal';
 import ReminderAlerts from './ReminderAlerts';
+import DmProvider from './DmProvider';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const fetchProjects = useProjectStore((s) => s.fetchProjects);
+  const fetchSpaces = useSpaceStore((s) => s.fetchSpaces);
   const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
 
@@ -51,9 +55,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (activeWorkspace) {
+      // Switching workspace: drop the previous workspace's spaces/projects/channels first
+      useSpaceStore.getState().clear();
+      useChannelStore.getState().reset();
+      fetchSpaces(activeWorkspace.id);
       fetchProjects(activeWorkspace.id);
     }
-  }, [activeWorkspace, fetchProjects]);
+  }, [activeWorkspace, fetchProjects, fetchSpaces]);
 
   // Drag logic
   const startDragging = useCallback((e: React.MouseEvent) => {
@@ -143,6 +151,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <CommandPalette />
       <CreateModal />
       <ReminderAlerts />
+      <DmProvider />
       <AiChatDrawer open={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />
     </div>
   );

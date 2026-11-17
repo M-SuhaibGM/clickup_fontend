@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
-import { useState } from 'react'
+import { useState, useMemo, Suspense } from 'react'
+import { useDmStore } from '@/store/dmStore';
+import UserAvatar from './UserAvatar';
 import { useReminderStore, bucketOf } from '@/store/reminderStore';
 import { useNow } from '@/lib/useNow';
 import {
@@ -32,11 +33,14 @@ import {
   History,
   Bot,
   UserPlus,
+  Megaphone,
 } from 'lucide-react';
 
 // Import your Modals
 import NewProjectModal from './NewProjectModal';
-import NewWorkspaceModal from './Newworkspacemodal';
+import NewSpaceModal from './NewSpaceModal';
+import SpaceTree, { ChannelList } from './SpaceTree';
+import { BrainLogo, SectionLabel } from './SidebarSection';
 import InviteMemberModal from './InviteMemberModal';
 
 export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
@@ -44,13 +48,13 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
   const router = useRouter();
 
   // Stores
-  const projects = useProjectStore((s) => s.projects);
   const { workspaces, activeWorkspace } = useWorkspaceStore();
   const user = useAuthStore((s) => s.user);
 
   // Modal States
   const [projectModalOpen, setProjectModalOpen] = useState(false);
-  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
+  const [spaceModalOpen, setSpaceModalOpen] = useState(false);
+  const [projectSpaceId, setProjectSpaceId] = useState<string | null>(null);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // Inbox badge: reminders whose time has come and aren't cleared
@@ -60,7 +64,24 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
 
   // UI States
   const [query, setQuery] = useState('');
-  const [expandedTeamSpace, setExpandedTeamSpace] = useState(true);
+
+  // Direct messages: every member of the active workspace
+  const dmMembers = useDmStore((s) => s.members);
+  const dmUnread = useDmStore((s) => s.unread);
+  const dmLast = useDmStore((s) => s.lastMessageAt);
+  const [expandedDms, setExpandedDms] = useState(true);
+  const dmList = useMemo(() => {
+    const others = dmMembers
+      .filter((m) => m.id !== user?.id)
+      .sort((a, b) => {
+        const ta = dmLast[a.id] ? Date.parse(dmLast[a.id]) : 0;
+        const tb = dmLast[b.id] ? Date.parse(dmLast[b.id]) : 0;
+        return tb - ta || a.name.localeCompare(b.name);
+      });
+    const self = dmMembers.find((m) => m.id === user?.id);
+    return self ? [self, ...others] : others; // "You" first, like ClickUp
+  }, [dmMembers, dmLast, user?.id]);
+  const dmTotalUnread = Object.values(dmUnread).reduce((a, b) => a + b, 0);
 
   // Check if admin (based on active workspace role)
   const isAdmin = activeWorkspace?.role === 'ADMIN';
@@ -82,7 +103,7 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
               </button>
             )}
             <button
-              onClick={() => setProjectModalOpen(true)}
+              onClick={() => { setProjectSpaceId(null); setProjectModalOpen(true); }}
               className="flex items-center gap-1.5 px-3 py-1 bg-[color:var(--c-white)] hover:opacity-85 text-[color:var(--c-1e1f21)] rounded-md text-[13px] font-semibold transition"
             >
               <Plus className="h-3.5 w-3.5" /> Create
@@ -110,6 +131,7 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
           {/* Top Nav Items */}
           <NavItem icon={FileText} label="New" href="/ai" />
           <NavItem icon={Inbox} label="Inbox" href="/inbox" active={pathname === '/inbox'} badge={inboxCount} />
+          <NavItem icon={Megaphone} label="Posts" href="/posts" active={pathname === '/posts'} />
 
           {/* My Tasks (Links to actual page) */}
           <NavItem icon={User} label="My Tasks" href="/my-tasks" active={pathname === '/my-tasks'} expandable />
@@ -143,74 +165,110 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
 
           <div className="my-2 border-t border-[color:var(--c-333438)]" />
 
-          {/* --- SPACES SECTION --- */}
-          <div className="mt-2">
-            <div className="flex items-center justify-between px-2.5 mb-1">
-              <span className="text-[11px] uppercase tracking-wider font-bold text-[color:var(--c-8a8c91)]">Spaces</span>
-              <button
-                onClick={() => setWorkspaceModalOpen(true)}
-                className="text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
-                title="Create Workspace"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* Team Space (Real Projects Data) */}
-            <div className="mt-1">
-              <div
-                onClick={() => setExpandedTeamSpace(!expandedTeamSpace)}
-                className="flex items-center justify-between px-2 py-1.5 hover:bg-[color:var(--c-2a2b2e)] rounded-md cursor-pointer group"
-              >
-                <div className="flex items-center gap-2">
-                  <ChevronRight className={`h-3.5 w-3.5 text-[color:var(--c-8a8c91)] transition-transform ${expandedTeamSpace ? 'rotate-90' : ''}`} />
-                  <Users className="h-4 w-4 text-blue-500" />
-                  <span className="text-[13px] text-[color:var(--c-white)] font-medium overflow-hidden">{activeWorkspace?.name}</span>
-                </div>
-                <Plus
-                  onClick={(e) => { e.stopPropagation(); setProjectModalOpen(true); }}
-                  className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] opacity-0 group-hover:opacity-100 hover:text-[color:var(--c-white)] transition"
-                />
-              </div>
-
-
-              {/* Real Projects mapped from DB */}
-              {expandedTeamSpace && (
-                <div className="ml-5 pl-3 border-l border-[color:var(--c-333438)] space-y-0.5 mt-1">
-                  {projects.map(p => (
-                    <Link
-                      key={p.id}
-                      href={`/projects/${p.id}`}
-                      className={`flex items-center justify-between px-2 py-1.5 rounded-md transition-colors ${pathname === `/projects/${p.id}` ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)] font-medium' : 'text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)]'
-                        }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <CheckSquare className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)]" />
-                        <span className="text-[13px] truncate">{p.name}</span>
-                      </div>
-                      <span className="text-[10px] text-[color:var(--c-8a8c91)]">{p._count?.lists || 0}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-            {/* New Space Button */}
-            <button
-              onClick={() => setWorkspaceModalOpen(true)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 mt-2 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded-md transition"
+          {/* --- AGENTS --- */}
+          <SectionLabel>Agents</SectionLabel>
+          <div className="space-y-0.5">
+            <Link
+              href="/ai"
+              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-colors ${
+                pathname === '/ai'
+                  ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)]'
+                  : 'text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)]'
+              }`}
+            >
+              <BrainLogo size={20} />
+              <span className="text-[14px]">Brain</span>
+            </Link>
+            <Link
+              href="/ai"
+              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] transition-colors"
             >
               <Plus className="h-4 w-4" />
-              <span className="text-[13px]">New Space</span>
+              <span className="text-[14px]">New Super Agent</span>
+            </Link>
+          </div>
+
+          {/* --- SPACES (workspace → spaces → projects) and CHANNELS (one per project) --- */}
+          <Suspense fallback={null}>
+            <SpaceTree
+              isAdmin={isAdmin}
+              onCreateSpace={() => setSpaceModalOpen(true)}
+              onCreateProject={(spaceId) => { setProjectSpaceId(spaceId); setProjectModalOpen(true); }}
+            />
+            <ChannelList />
+          </Suspense>
+
+          {/* Invite Button */}
+          <button
+            onClick={() => setInviteModalOpen(true)}
+            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 mt-3 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded-lg transition"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span className="text-[14px]">Invite People</span>
+          </button>
+
+          <div className="my-2 border-t border-[color:var(--c-333438)]" />
+
+          {/* --- DIRECT MESSAGES --- */}
+          <div className="mt-2 pb-2">
+            <button
+              onClick={() => setExpandedDms(!expandedDms)}
+              className="w-full flex items-center justify-between px-2.5 mb-1 group"
+            >
+              <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[color:var(--c-8a8c91)]">
+                <ChevronRight className={`h-3 w-3 transition-transform ${expandedDms ? 'rotate-90' : ''}`} />
+                Direct Messages
+              </span>
+              {!expandedDms && dmTotalUnread > 0 && (
+                <span className="min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-semibold leading-4 text-white">
+                  {dmTotalUnread > 99 ? '99+' : dmTotalUnread}
+                </span>
+              )}
             </button>
 
-            {/* Invite Button (if admin) */}
-            <button
-              onClick={() => setInviteModalOpen(true)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 mt-1 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded-md transition"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span className="text-[13px]">Invite People</span>
-            </button>
+            {expandedDms && (
+              <div className="space-y-0.5">
+                {dmList.map((m) => {
+                  const href = `/messages/${m.id}`;
+                  const active = pathname === href;
+                  const unread = dmUnread[m.id] ?? 0;
+                  const isSelf = m.id === user?.id;
+                  return (
+                    <Link
+                      key={m.id}
+                      href={href}
+                      className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md transition-colors ${
+                        active
+                          ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)] font-medium'
+                          : 'text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <UserAvatar name={m.name} src={m.avatar} size={20} />
+                        <span className={`text-[13px] truncate ${unread > 0 ? 'font-semibold text-[color:var(--c-white)]' : ''}`}>
+                          {m.name}
+                          {isSelf && <span className="ml-1.5 font-normal text-[color:var(--c-8a8c91)]">— You</span>}
+                        </span>
+                      </div>
+                      {unread > 0 && (
+                        <span className="min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-semibold leading-4 text-white">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+                {dmList.length <= 1 && (
+                  <button
+                    onClick={() => setInviteModalOpen(true)}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] rounded-md transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="text-[13px]">Invite someone to chat</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </nav>
       </div>
@@ -218,11 +276,12 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
       {/* --- RENDER MODALS --- */}
       <NewProjectModal
         open={projectModalOpen}
+        defaultSpaceId={projectSpaceId}
         onClose={() => setProjectModalOpen(false)}
       />
-      <NewWorkspaceModal
-        open={workspaceModalOpen}
-        onClose={() => setWorkspaceModalOpen(false)}
+      <NewSpaceModal
+        open={spaceModalOpen}
+        onClose={() => setSpaceModalOpen(false)}
       />
       <InviteMemberModal
         open={inviteModalOpen}
