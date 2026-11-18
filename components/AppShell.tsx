@@ -119,8 +119,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       
       <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} onAiChatClick={() => setIsAiChatOpen(true)} />
 
-      <div className="flex flex-1 overflow-hidden pt-1 pb-2 px-2">
-        
+      <div className="relative flex flex-1 min-h-0 overflow-hidden pt-1 pb-2 px-2">
+
         {/* App Rail (Far Left) — visible on all screen sizes */}
         <AppRail
           isSidebarOpen={isSidebarOpen}
@@ -131,7 +131,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div
           ref={sidebarRef}
           style={{ width: isSidebarOpen ? `${sidebarWidth}px` : '0px' }}
-          className={`h-full shrink-0 relative transition-[width,opacity] duration-300 ease-in-out ${
+          className={`h-full shrink-0 transition-[width,opacity] duration-300 ease-in-out
+            max-md:absolute max-md:top-1 max-md:bottom-2 max-md:left-[68px] max-md:z-40 max-md:max-w-[calc(100vw-84px)] max-md:h-auto max-md:shadow-2xl
+            md:relative ${
             isSidebarOpen ? 'opacity-100' : 'opacity-0 overflow-hidden'
           }`}
         >
@@ -147,7 +149,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Main Content Area */}
-        <main className={`flex-1 overflow-y-auto relative bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] ${isSidebarOpen ? 'rounded-r-lg' : 'rounded-lg'}`}>
+        <main className={`flex-1 min-w-0 overflow-x-hidden overflow-y-auto relative max-md:rounded-lg bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] ${isSidebarOpen ? 'rounded-r-lg' : 'rounded-lg'}`}>
           {children}
           {!ready && (
             <div className="absolute inset-0 z-10 bg-[color:var(--c-1e1f21)] rounded-lg">

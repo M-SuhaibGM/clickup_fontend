@@ -179,9 +179,9 @@ export default function WorkspaceSettingsPage() {
   const swatches = ['#4b4c52', '#6f5bd1', '#1f7fb5', '#d0508a', '#9b4fc4', '#5b64d6', '#e0721f', '#1d9488', '#9a8070', '#2f9e6b'];
 
   return (
-    <div className="px-4 sm:px-8 py-8 w-full">
+    <div className="px-3 sm:px-8 py-5 sm:py-8 w-full min-w-0">
       <div className="max-w-[720px] mx-auto">
-        <h1 className="text-2xl font-bold text-foreground mb-8">Workspace Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6 sm:mb-8">Workspace Settings</h1>
 
         {/* General */}
         <h2 className={sectionTitle}>General</h2>
@@ -192,9 +192,9 @@ export default function WorkspaceSettingsPage() {
               {activeWorkspace.name[0]?.toUpperCase()}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-4 px-4 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 px-4 py-4">
             <label htmlFor="ws-name" className="text-sm font-semibold text-foreground">Name</label>
-            <div className="relative w-full max-w-[240px]">
+            <div className="relative w-full sm:max-w-[240px]">
               <input
                 id="ws-name"
                 type="text"
@@ -207,8 +207,8 @@ export default function WorkspaceSettingsPage() {
               {saving && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </div>
           </div>
-          <div className="flex items-start justify-between gap-4 px-4 py-4">
-            <label htmlFor="ws-desc" className="text-sm font-semibold text-foreground pt-1.5">Description</label>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 px-4 py-4">
+            <label htmlFor="ws-desc" className="text-sm font-semibold text-foreground sm:pt-1.5">Description</label>
             <textarea
               id="ws-desc"
               value={description}
@@ -226,7 +226,7 @@ export default function WorkspaceSettingsPage() {
               }}
               rows={2}
               placeholder="What is this workspace about?"
-              className="w-full max-w-[240px] resize-none rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground/70 transition"
+              className="w-full sm:max-w-[240px] resize-none rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground/70 transition"
             />
           </div>
         </div>
@@ -243,30 +243,30 @@ export default function WorkspaceSettingsPage() {
           </div>
           <div className="opacity-50 divide-y divide-border">
             {brandingRows.map((r) => (
-              <div key={r.title} className="flex items-center justify-between gap-6 px-4 py-4">
-                <div>
+              <div key={r.title} className="flex items-center justify-between gap-3 sm:gap-6 px-4 py-4">
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground">{r.title}</p>
                   <p className="text-xs text-muted-foreground mt-1">{r.desc}</p>
                 </div>
                 <AddButton />
               </div>
             ))}
-            <div className="flex items-center justify-between gap-6 px-4 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 px-4 py-4">
               <span className="text-sm font-semibold text-foreground">Color scheme</span>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {swatches.map((c) => (
                   <span key={c} className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: c }} />
                 ))}
                 <Plus className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-            <div className="flex items-center justify-between gap-6 px-4 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 px-4 py-4">
               <span className="text-sm font-semibold text-foreground">Custom URL</span>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
                 <input
                   disabled
                   placeholder="app"
-                  className="w-[230px] rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-not-allowed"
+                  className="w-full sm:w-[230px] min-w-0 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none cursor-not-allowed"
                 />
                 .clickup.com
               </div>
@@ -277,8 +277,8 @@ export default function WorkspaceSettingsPage() {
         {/* Personal layout */}
         <h2 className={`${sectionTitle} mt-10`}>Personal layout</h2>
         <div className={card}>
-          <div className="flex items-center justify-between gap-6 px-4 py-4">
-            <div>
+          <div className="flex items-center justify-between gap-3 sm:gap-6 px-4 py-4">
+            <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">Personal Workspace layout</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Work by yourself? Turn this on to maximize your efficiency by removing features designed for team collaboration.
@@ -291,12 +291,12 @@ export default function WorkspaceSettingsPage() {
         {/* Danger zone */}
         <h2 className={`${sectionTitle} mt-10`}>Danger zone</h2>
         <div className={card}>
-          <div className="flex items-center justify-between gap-4 px-4 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 px-4 py-4">
             <span className="text-sm font-semibold text-foreground">Delete this Workspace forever</span>
             <button
               type="button"
               onClick={() => setConfirmDelete(true)}
-              className="rounded-md border border-red-500 px-3 py-1.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition flex-shrink-0"
+              className="rounded-md border border-red-500 px-3 py-1.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition sm:flex-shrink-0"
             >
               Delete Workspace
             </button>

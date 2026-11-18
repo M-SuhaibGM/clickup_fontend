@@ -22,11 +22,11 @@ export default function PlannerPage() {
       />
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 flex flex-col md:flex-row items-center justify-center p-8 md:p-16 max-w-7xl mx-auto w-full gap-12">
+      <div className="relative z-10 flex-1 flex flex-col md:flex-row items-center justify-center p-4 sm:p-8 md:p-16 max-w-7xl mx-auto w-full gap-8 md:gap-12">
         
         {/* Left Side: Text & Buttons */}
         <div className="flex-1 space-y-8 max-w-lg">
-          <h1 className="text-5xl md:text-6xl font-bold text-[color:var(--c-white)] tracking-tight leading-[1.1]">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[color:var(--c-white)] tracking-tight leading-[1.1]">
             You, but better<br />organized
           </h1>
           <p className="text-[color:var(--c-8a8c91)] text-lg leading-relaxed">
@@ -47,10 +47,10 @@ export default function PlannerPage() {
         </div>
 
         {/* Right Side: The Carousel/Cards */}
-        <div className="flex-1 flex items-center justify-center relative w-full min-h-[400px]">
+        <div className="flex-1 flex items-center justify-center relative w-full min-w-0 md:min-h-[400px]">
           
           {/* Main Card (Center) */}
-          <div className="w-[380px] bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded-2xl p-4 shadow-2xl z-20">
+          <div className="w-full max-w-[380px] bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded-2xl p-4 shadow-2xl z-20">
             {/* Mockup Header */}
             <div className="flex items-center justify-between mb-4 bg-[color:var(--c-2a2b2e)] rounded-t-lg p-2">
               <div className="flex items-center gap-2">

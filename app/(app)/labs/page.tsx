@@ -18,7 +18,7 @@ export default function LabsPage() {
   const [joined, setJoined] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-[color:var(--c-121212)] overflow-hidden rounded-xl">
+    <div className="relative min-h-full bg-[color:var(--c-121212)] overflow-hidden rounded-xl">
       
       {/* Background Holographic Gradient Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -29,15 +29,15 @@ export default function LabsPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="relative z-10 p-8 max-w-5xl mx-auto flex flex-col gap-6">
+      <div className="relative z-10 p-3 sm:p-6 lg:p-8 max-w-5xl mx-auto flex flex-col gap-4 sm:gap-6">
         
         {/* Top Card */}
-        <div className="bg-[color:var(--c-1e1f21)]/90 backdrop-blur-xl border border-[color:var(--c-333438)] rounded-2xl p-8 shadow-2xl">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+        <div className="bg-[color:var(--c-1e1f21)]/90 backdrop-blur-xl border border-[color:var(--c-333438)] rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl">
+          <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-8">
             
             {/* Left Side Text */}
-            <div className="flex-1">
-              <h1 className="text-4xl md:text-5xl font-bold text-[color:var(--c-white)] mb-4 tracking-tight">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[color:var(--c-white)] mb-4 tracking-tight">
                 Try tomorrow's<br />
                 ClickUp <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500">today</span>
               </h1>
@@ -45,10 +45,10 @@ export default function LabsPage() {
                 ClickUp Labs gives you early access to experimental features. Choose which features you want on or off, and help shape what ships.
               </p>
               
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
                 <button 
                   onClick={() => setJoined(!joined)}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                  className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                     joined 
                       ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)] border border-[color:var(--c-333438)]' 
                       : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white shadow-lg shadow-indigo-500/20'
@@ -92,12 +92,12 @@ export default function LabsPage() {
           </div>
 
           {/* Divider */}
-          <div className="h-px w-full bg-[color:var(--c-2a2b2e)] my-8" />
+          <div className="h-px w-full bg-[color:var(--c-2a2b2e)] my-6 sm:my-8" />
 
           {/* How Labs Works Section */}
           <div>
             <h3 className="text-[color:var(--c-white)] font-medium mb-4">How Labs works</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FeatureCard icon={CheckCircle2} text="You choose what's on" />
               <FeatureCard icon={RefreshCcw} text="Changes apply after a reload" />
               <FeatureCard icon={CalendarClock} text="Switch tiers any time" />
@@ -107,9 +107,9 @@ export default function LabsPage() {
         </div>
 
         {/* Bottom Card (Experiments Placeholder) */}
-        <div className="bg-[color:var(--c-1e1f21)]/90 backdrop-blur-xl border border-[color:var(--c-333438)] rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[color:var(--c-1e1f21)]/90 backdrop-blur-xl border border-[color:var(--c-333438)] rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl">
            <h2 className="text-xl font-bold text-[color:var(--c-white)] mb-4">Experiments</h2>
-           <div className="flex flex-col items-center justify-center p-12 text-[color:var(--c-8a8c91)] border border-dashed border-[color:var(--c-333438)] rounded-xl">
+           <div className="flex flex-col items-center justify-center p-6 sm:p-12 text-center text-[color:var(--c-8a8c91)] border border-dashed border-[color:var(--c-333438)] rounded-xl">
               <LayoutGrid className="h-10 w-10 mb-3 opacity-50" />
               <p>More experiments are on the way.</p>
            </div>

@@ -51,11 +51,11 @@ export default function TeamsPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="px-8 py-12 max-w-6xl mx-auto flex flex-col lg:flex-row gap-12 items-center">
+      <div className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
         
         {/* Left Side: Text */}
         <div className="flex-1 space-y-6">
-          <h1 className="text-6xl font-bold tracking-tight leading-[1.1]">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
             Align teams<br />
             and visualize<br />
             their work!
@@ -140,7 +140,7 @@ export default function TeamsPage() {
       </div>
 
       {/* Bottom Section: Teams List Placeholder */}
-      <div className="px-8 max-w-6xl mx-auto mt-8">
+      <div className="px-4 sm:px-8 max-w-6xl mx-auto mt-8">
          <div className="flex items-center justify-between mb-4">
            <h2 className="text-lg font-semibold">Your Teams</h2>
            <div className="flex gap-2 text-(--c-8a8c91)">

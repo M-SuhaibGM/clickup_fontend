@@ -30,16 +30,16 @@ function DashboardContent() {
   if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <div className="min-h-screen bg-[color:var(--c-1e1f21)] text-[color:var(--c-white)] p-6 md:p-8 overflow-y-auto">
+    <div className="min-h-full bg-[color:var(--c-1e1f21)] text-[color:var(--c-white)] p-4 sm:p-6 md:p-8 overflow-y-auto">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* --- 1. Hero / Marketing Banner (Like ClickUp's "You, but better organized") --- */}
-        <div className="relative rounded-2xl overflow-hidden bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8">
+        <div className="relative rounded-2xl overflow-hidden bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] p-5 sm:p-8 md:p-12 flex flex-col md:flex-row items-center gap-8">
           {/* Decorative Background */}
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
 
           <div className="flex-1 z-10">
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight mb-4">
               You, but better organized
             </h1>
             <p className="text-[color:var(--c-8a8c91)] text-sm md:text-base max-w-md mb-6">

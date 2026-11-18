@@ -139,7 +139,7 @@ export default function ProfilePage() {
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
-      <div className="max-w-180 mx-auto px-6 py-10">
+      <div className="max-w-180 mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <h1 className="text-2xl font-bold text-(--c-white) mb-8">Preferences</h1>
 
         <h2 className="text-[14px] font-semibold text-(--c-white)">Profile</h2>

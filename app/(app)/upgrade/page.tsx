@@ -45,12 +45,12 @@ export default function UpgradePage() {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('yearly');
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-[color:var(--c-1e1f21)] text-[color:var(--c-white)]">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto min-h-full bg-[color:var(--c-1e1f21)] text-[color:var(--c-white)]">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold flex flex-wrap items-center gap-2 sm:gap-3">
             Plans 
             <span className="text-sm font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full flex items-center gap-1">
               <Check className="h-3 w-3" /> 30-day money-back guarantee
