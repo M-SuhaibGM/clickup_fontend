@@ -115,7 +115,7 @@ function HomeSidebar({ onCollapse }: { onCollapse?: () => void }) {
             {onCollapse && (
               <button
                 onClick={onCollapse}
-                className="p-1 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] rounded hover:bg-[color:var(--c-2a2b2e)] opacity-0 group-hover/header:opacity-100 transition-all"
+                className="p-1 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] rounded hover:bg-[color:var(--c-2a2b2e)] transition-colors"
               >
                 <ChevronsLeft className="h-4 w-4" />
               </button>

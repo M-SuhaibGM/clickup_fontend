@@ -236,6 +236,7 @@
   --c-d4d4d4: #d4d4d4;
   /* outermost app chrome: top bar, rail and the frame around the panels */
   --c-shell: var(--c-1e1f21);
+  --c-rail: #191919;
 }
 .dark {
   /* near-black, layered: shell (darkest) < page < panels < sidebar < hover */
@@ -257,6 +258,8 @@
 /* Accent color themes (set via data-accent on <html>) */
 html.dark[data-accent] {
   --c-shell: var(--c-1e1f21);
+  /* rail follows the chosen accent, a touch darker than the panels */
+  --c-rail: color-mix(in srgb, var(--c-1e1f21) 65%, black);
 }
 html.dark[data-accent="purple"] {
   --primary: #7b68ee;

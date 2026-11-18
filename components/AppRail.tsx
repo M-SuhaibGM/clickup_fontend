@@ -43,7 +43,7 @@ export default function AppRail({
 
   return (
     <>
-      <div className="w-13 shrink-0 h-full flex flex-col items-center py-3 z-50 rounded-lg mb-2 mr-2 relative bg-[#191919]">
+      <div className="w-13 shrink-0 h-full flex flex-col items-center py-3 z-50 rounded-lg mb-2 mr-2 relative bg-(--c-rail)">
 
         {/* Top Section */}
         <div className="flex flex-col items-center w-full shrink-0">
