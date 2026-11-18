@@ -10,7 +10,7 @@ interface TaskState {
   loadingLists: Record<string, boolean>;
 
   fetchTasks: (listId: string) => Promise<void>;
-  createTask: (listId: string, input: { title: string; description?: string; dueDate?: string; status?: string; priority?: string; assigneeId?: string }) => Promise<Task>;
+  createTask: (listId: string, input: { title: string; description?: string; dueDate?: string; status?: string; priority?: string; assigneeId?: string; parentId?: string }) => Promise<Task>;
   updateTask: (taskId: string, listId: string, patch: Partial<Task>) => Promise<Task>;
   deleteTask: (taskId: string, listId: string) => Promise<void>;
   reorderTasks: (listId: string, newTasks: Task[]) => Promise<void>;

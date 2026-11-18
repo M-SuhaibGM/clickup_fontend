@@ -10,6 +10,7 @@ export interface Post {
   createdAt: string;
   author: { id: string; name: string; avatar: string | null };
   channel: { id: string; name: string; projectId: string };
+  reactions?: { emoji: string; userId: string }[];
 }
 
 export interface PostFilters {

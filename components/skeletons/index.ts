@@ -5,6 +5,6 @@ export { default as TeamsSkeleton } from './TeamsSkeleton';
 export { default as ProjectDetailSkeleton } from './ProjectDetailSkeleton';
 export { default as SettingsSkeleton } from './SettingsSkeleton';
 export { default as MembersSkeleton } from './MembersSkeleton';
-export { default as HistorySkeleton } from './HistorySkeleton';
+export { default as AuditLogsSkeleton } from './AuditLogsSkeleton';
 export { default as WorkflowsSkeleton } from './WorkflowsSkeleton';
 export { default as AiSkeleton } from './AiSkeleton';

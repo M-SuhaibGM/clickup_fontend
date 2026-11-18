@@ -17,6 +17,7 @@ import {
   Mic,
   AlarmClock,
   LogOut,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
@@ -24,20 +25,14 @@ import { useSpaceStore } from '@/store/spaceStore';
 import { useChannelStore } from '@/store/channelStore';
 import { useCreateModal } from '@/store/createModalStore';
 import { logout } from '@/lib/auth';
-import Notepad from '../Notepad';
-import ThemeModal from '../ThemeModal';
-import AiChatDrawer from '../AiChatDrawer';
-import MyWorkDrawer from './MyWorkDrawer';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { lazyOnOpen } from '../LazyMount';
+
+
+const Notepad = lazyOnOpen(() => import('../Notepad'));
+const ThemeModal = lazyOnOpen(() => import('../ThemeModal'));
+const AiChatDrawer = lazyOnOpen(() => import('../AiChatDrawer'), { slideIn: true });
+const LogoutDialog = lazyOnOpen(() => import('./LogoutDialog'), { slideIn: true });
+const MyWorkDrawer = lazyOnOpen(() => import('./MyWorkDrawer'), { slideIn: true });
 
 export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip: () => void; onTalkToText: () => void }) {
   const router = useRouter();
@@ -72,14 +67,18 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
   return (
     <>
       <div className="relative" ref={userMenuRef}>
-        <button onClick={() => setUserMenuOpen((o) => !o)} className="flex items-center gap-1.5 rounded hover:bg-(--c-2a2b2e) p-1 transition ml-1">
-          {user?.avatar ? (
-            <Image src={user.avatar} alt={user.name || 'User'} width={24} height={24} className="h-6 w-6 rounded-full object-cover border border-(--c-333438)" referrerPolicy="no-referrer" />
-          ) : (
-            <div className="h-6 w-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px] font-bold">
-              {user?.name?.[0]?.toUpperCase() ?? '?'}
-            </div>
-          )}
+        <button onClick={() => setUserMenuOpen((o) => !o)} className="flex items-center gap-1 rounded hover:bg-(--c-2a2b2e) py-1 pl-1 pr-0.5 transition ml-1">
+          <span className="relative">
+            {user?.avatar ? (
+              <Image src={user.avatar} alt={user.name || 'User'} width={24} height={24} className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="h-6 w-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px] font-bold">
+                {user?.name?.[0]?.toUpperCase() ?? '?'}
+              </div>
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-(--c-shell)" />
+          </span>
+          <ChevronDown className="h-3 w-3 text-(--c-8a8c91)" />
         </button>
 
         {userMenuOpen && (
@@ -208,24 +207,7 @@ export default function UserMenu({ onRecordClip, onTalkToText }: { onRecordClip:
       <MyWorkDrawer open={myWorkOpen} onClose={() => setMyWorkOpen(false)} onStandUp={() => { setMyWorkOpen(false); setAiChatDrawerOpen(true); }} />
       <AiChatDrawer open={aiChatDrawerOpen} onClose={() => setAiChatDrawerOpen(false)} />
 
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent className="bg-(--c-1e1f21) border-(--c-333438) text-(--c-white)">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-            <AlertDialogDescription className="text-(--c-8a8c91)">
-              You will need to sign in again to access your workspace.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-(--c-2a2b2e) border-(--c-333438) text-(--c-white) hover:bg-(--c-333438) hover:text-(--c-white)">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLogout} className="bg-red-600 hover:bg-red-700 text-white">
-              Sign out
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <LogoutDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} onConfirm={confirmLogout} />
     </>
   );
 }

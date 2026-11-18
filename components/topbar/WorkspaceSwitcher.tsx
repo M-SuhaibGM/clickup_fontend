@@ -5,8 +5,11 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Menu, Settings, ChevronDown, Check, Plus, Users, Calendar } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import NewWorkspaceModal from '../Newworkspacemodal';
+import { lazyOnOpen } from '../LazyMount';
+
 import { getInitials } from './utils';
+
+const NewWorkspaceModal = lazyOnOpen(() => import('../Newworkspacemodal'));
 
 export default function WorkspaceSwitcher({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname();
@@ -36,9 +39,9 @@ export default function WorkspaceSwitcher({ onMenuClick }: { onMenuClick?: () =>
         <div className="relative" ref={wsMenuRef}>
           <button
             onClick={() => setWsMenuOpen(!wsMenuOpen)}
-            className="flex items-center gap-2 bg-(--c-2a2b2e) border border-(--c-333438) hover:bg-(--c-333438) px-2 py-0.5 rounded-md mt-1 transition-colors"
+            className="flex items-center gap-2 bg-(--c-2a2b2e) hover:bg-(--c-333438) h-7 pl-1 pr-2 rounded-lg transition-colors"
           >
-            <div className="h-6 w-6 rounded bg-[#1bb5a5] text-white flex items-center justify-center text-[11px] font-bold">
+            <div className="h-5 w-5 rounded-md bg-[#1bb5a5] text-white flex items-center justify-center text-[11px] font-bold">
               {getInitials(activeWorkspace?.name)}
             </div>
             <span className="text-[13px] font-semibold text-(--c-white) hidden sm:block max-w-37.5 truncate">
@@ -114,8 +117,8 @@ export default function WorkspaceSwitcher({ onMenuClick }: { onMenuClick?: () =>
 
         <Link
           href="/planner"
-          className={`p-1.5 rounded-md transition-colors mt-1 ${pathname === '/planner'
-            ? 'bg-(--c-2a2b2e) text-(--c-white) border border-(--c-333438)'
+          className={`p-1.5 rounded-md transition-colors ${pathname === '/planner'
+            ? 'bg-(--c-2a2b2e) text-(--c-white)'
             : 'text-(--c-8a8c91) hover:text-(--c-white) hover:bg-(--c-2a2b2e)'
             }`}
           title="Planner"

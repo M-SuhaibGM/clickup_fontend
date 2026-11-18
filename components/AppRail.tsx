@@ -24,7 +24,10 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import InviteMemberModal from './InviteMemberModal';
+import { lazyOnOpen } from './LazyMount';
+
+const InviteMemberModal = lazyOnOpen(() => import('./InviteMemberModal'));
+
 
 export default function AppRail({
   isSidebarOpen,
@@ -36,56 +39,33 @@ export default function AppRail({
   const [active, setActive] = useState('Home');
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const pathname = usePathname();
+  const onTeams = pathname === '/teams' || pathname.startsWith('/teams/');
 
   return (
     <>
-      <div className="w-13 shrink-0 h-full flex flex-col items-center py-3 z-50  dark:bg-(--c-232426)   rounded-lg mb-2 mr-2 relative">
+      <div className="w-13 shrink-0 h-full flex flex-col items-center py-3 z-50 rounded-lg mb-2 mr-2 relative bg-[#191919]">
 
         {/* Top Section */}
         <div className="flex flex-col items-center w-full shrink-0">
           <div className={`w-full flex justify-center transition-all duration-300 ${isSidebarOpen ? 'h-0 opacity-0 mb-0' : 'h-10 opacity-100 mb-2'}`}>
-            <button onClick={toggleSidebar} className="p-1.5 text-(--c-8a8c91) hover:text-(--c-white) rounded hover:bg-(--c-2a2b2e) transition">
+            <button onClick={toggleSidebar} className="p-1.5 text-[#FFFFFF] rounded hover:bg-(--c-2a2b2e) transition">
               <ChevronsRight className="h-5 w-5" />
             </button>
           </div>
 
           {/* Home Link */}
-          <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
-            <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/dashboard' ? 'text-[color:var(--c-white)] bg-[color:var(--c-2a2b2e)]' : 'text-[color:var(--c-8a8c91)] group-hover:text-[color:var(--c-white)] group-hover:bg-[color:var(--c-2a2b2e)]/50'}`}>
-              {pathname === '/dashboard' && <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />}
-              <Home className={`h-5 w-5 relative z-10 ${pathname === '/dashboard' ? 'text-[color:var(--c-white)]' : ''}`} />
-            </div>
-            <span className={`text-[10px] font-medium transition-colors ${pathname === '/dashboard' ? 'text-[color:var(--c-white)]' : 'text-[color:var(--c-8a8c91)] group-hover:text-[color:var(--c-white)]'}`}>Home</span>
-          </Link>
-          {/* Replace the Planner RailItem with this: */}
-          <Link href="/planner" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
-            <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/planner' ? 'text-[color:var(--c-white)] bg-[color:var(--c-2a2b2e)]' : 'text-[color:var(--c-8a8c91)] group-hover:text-[color:var(--c-white)] group-hover:bg-[color:var(--c-2a2b2e)]/50'
-              }`}>
-              {pathname === '/planner' && (
-                <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />
-              )}
-              <Calendar className={`h-5 w-5 relative z-10 ${pathname === '/planner' ? 'text-[color:var(--c-white)]' : ''}`} />
-            </div>
-            <span className={`text-[10px] font-medium transition-colors ${pathname === '/planner' ? 'text-[color:var(--c-white)]' : 'text-[color:var(--c-8a8c91)] group-hover:text-[color:var(--c-white)]'}`}>
-              Planner
-            </span>
-          </Link>
-          {/* AI Link */}
-          <Link href="/ai" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
-            <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/ai' ? 'text-[color:var(--c-white)] bg-[color:var(--c-2a2b2e)]' : 'text-[color:var(--c-8a8c91)] group-hover:text-[color:var(--c-white)] group-hover:bg-[color:var(--c-2a2b2e)]/50'}`}>
-              {pathname === '/ai' && <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />}
-              <Image src="/ai-icon.png" alt="AI" width={20} height={20} className={`h-5 w-5 relative z-10 object-contain ${pathname === '/ai' ? 'scale-110' : ''}`} />
-            </div>
-            <span className={`text-[10px] font-medium transition-colors ${pathname === '/ai' ? 'text-(--c-white)' : 'text-(--c-8a8c91) group-hover:text-[color:var(--c-white)]'}`}>AI</span>
-          </Link>
-
-          <Link href="/teams" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
-            <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/teams' ? 'text-(--c-white) bg-[color:var(--c-2a2b2e)]' : 'text-[color:var(--c-8a8c91)] group-hover:text-[color:var(--c-white)] group-hover:bg-[color:var(--c-2a2b2e)]/50'}`}>
-              {pathname === '/teams' && <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />}
-              <Users className={`h-5 w-5 relative z-10 ${pathname === '/teams' ? 'text-(--c-white)' : ''}`} />
-            </div>
-            <span className={`text-[10px] font-medium transition-colors ${pathname === '/teams' ? 'text-(--c-white)' : 'text-(--c-8a8c91) group-hover:text-[color:var(--c-white)]'}`}>Teams</span>
-          </Link>
+          <RailLink href="/dashboard" label="Home" active={pathname === '/dashboard'}>
+            <Home className="h-5 w-5" />
+          </RailLink>
+          <RailLink href="/planner" label="Planner" active={pathname === '/planner'}>
+            <Calendar className="h-5 w-5" />
+          </RailLink>
+          <RailLink href="/ai" label="AI" active={pathname === '/ai'}>
+            <Image src="/ai-icon.png" alt="" width={20} height={20} className="h-5 w-5 object-contain" />
+          </RailLink>
+          <RailLink href="/teams" label="Teams" active={onTeams}>
+            <Users className="h-5 w-5" />
+          </RailLink>
 
           {/* The More Button */}
           <MoreMenu />
@@ -96,13 +76,9 @@ export default function AppRail({
 
         {/* Bottom Section */}
         <div className="flex flex-col items-center w-full shrink-0 pb-1">
-          <Link href="/labs" className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
-            <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${pathname === '/labs' ? 'text-(--c-white) bg-(--c-2a2b2e)' : 'text-(--c-8a8c91) group-hover:text-(--c-white) group-hover:bg-(--c-2a2b2e)/50'}`}>
-              {pathname === '/labs' && <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />}
-              <FlaskConical className={`h-5 w-5 relative z-10 ${pathname === '/labs' ? 'text-(--c-white)' : ''}`} />
-            </div>
-            <span className={`text-[10px] font-medium transition-colors ${pathname === '/labs' ? 'text-(--c-white)' : 'text-(--c-8a8c91) group-hover:text-(--c-white)'}`}>Labs</span>
-          </Link>
+          <RailLink href="/labs" label="Labs" active={pathname === '/labs'}>
+            <FlaskConical className="h-5 w-5" />
+          </RailLink>
           <RailItem icon={UserPlus} label="Invite" active={false} onClick={() => setInviteModalOpen(true)} />
 
           <Link href="/upgrade" className="flex flex-col items-center gap-1 text-(--c-8a8c91) hover:text-(--c-white) transition mt-3 group">
@@ -153,7 +129,7 @@ function MoreMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className={`flex flex-col items-center justify-center gap-1 group w-full`}
       >
-        <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${isOpen ? 'text-(--c-white) bg-(--c-2a2b2e)' : 'text-(--c-8a8c91) group-hover:text-(--c-white) group-hover:bg-(--c-2a2b2e)/50'
+        <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${isOpen ? 'text-[#FFFFFF] bg-(--c-2a2b2e)' : 'text-[#FFFFFF] group-hover:bg-(--c-2a2b2e)/50'
           }`}>
           <Grip className={`h-5 w-5 relative z-10`} />
         </div>
@@ -208,16 +184,49 @@ function MoreMenu() {
   );
 }
 
-function RailItem({ icon: Icon, label, active, onClick, isGradient }: any) {
+// Colour that hugs the badge's edge: blue (left) → purple (top) → magenta / orange (bottom) → back to blue
+const EDGE_GLOW =
+  'conic-gradient(from 205deg, #2f7bff 0deg, #6a5cff 65deg, #c04bff 125deg, #ff4fa3 200deg, #ff8a3d 245deg, #ff4fa3 285deg, #3b82f6 360deg)';
+
+/**
+ * The icon's round badge. Inactive: plain, with a soft hover. Active: a dark disc whose edge glows with the
+ * gradient above and fades into the dark centre, plus a soft halo around it. The icon stays white.
+ */
+function RailBadge({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
+        active ? 'text-[#FFFFFF]' : 'text-[#FFFFFF] group-hover:bg-(--c-2a2b2e)'
+      }`}
+      style={
+        active
+          ? { background: `radial-gradient(circle at 50% 50%, #0d0d10 0%, #0d0d10 46%, rgba(13,13,16,0) 80%), ${EDGE_GLOW}` }
+          : undefined
+      }
+    >
+      {active && <span aria-hidden className="absolute inset-0 -z-10 rounded-full opacity-55 blur-md" style={{ background: EDGE_GLOW }} />}
+      {children}
+    </div>
+  );
+}
+
+const railLabel = (active: boolean) =>
+  `text-[10px] font-medium transition-colors ${active ? 'text-(--c-white)' : 'text-(--c-8a8c91) group-hover:text-(--c-white)'}`;
+
+function RailLink({ href, label, active, children }: { href: string; label: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link href={href} aria-current={active ? 'page' : undefined} className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
+      <RailBadge active={active}>{children}</RailBadge>
+      <span className={railLabel(active)}>{label}</span>
+    </Link>
+  );
+}
+
+function RailItem({ icon: Icon, label, active, onClick }: { icon: React.ComponentType<{ className?: string }>; label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className="flex flex-col items-center justify-center gap-1 group w-full my-1.5">
-      <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${active ? 'text-(--c-white) bg-(--c-2a2b2e)' : 'text-(--c-8a8c91) group-hover:text-(--c-white) group-hover:bg-(--c-2a2b2e)/50'}`}>
-        {isGradient && active && <div className="absolute inset-0 bg-linear-to-br from-blue-500/40 via-purple-500/40 to-pink-500/40 rounded-lg blur-md opacity-80" />}
-        <Icon className={`h-5 w-5 relative z-10 ${active && isGradient ? 'text-(--c-white)' : ''}`} />
-      </div>
-      <span className={`text-[10px] font-medium transition-colors ${active ? 'text-(--c-white)' : 'text-(--c-8a8c91) group-hover:text-(--c-white)'}`}>
-        {label}
-      </span>
+      <RailBadge active={active}><Icon className="h-5 w-5" /></RailBadge>
+      <span className={railLabel(active)}>{label}</span>
     </button>
   );
 }

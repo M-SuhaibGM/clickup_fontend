@@ -9,7 +9,10 @@ import { toast } from 'sonner';
 export default function SocketProvider({ projectId }: { projectId: string }) {
   useEffect(() => {
     const socket = connectSocket();
-    socket.emit('join:project', projectId);
+    // Rooms don't survive a reconnect — join again every time the socket (re)connects
+    const join = () => socket.emit('join:project', projectId);
+    join();
+    socket.on('connect', join);
 
     // Helper: refresh the pending task count using the CURRENT workspace
     const refreshCount = () => {
@@ -46,6 +49,7 @@ export default function SocketProvider({ projectId }: { projectId: string }) {
     });
 
     return () => {
+      socket.off('connect', join);
       socket.emit('leave:project', projectId);
       socket.off('task:created');
       socket.off('task:updated');

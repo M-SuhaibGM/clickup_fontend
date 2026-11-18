@@ -15,6 +15,7 @@ const SOCKET_URL =
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  poweredByHeader: false,
   experimental: {
     agentUpgrade: "security",
   },
@@ -48,6 +49,11 @@ const nextConfig: NextConfig = {
   // the NEXT_PUBLIC_ prefix on the source variable name.
   env: {
     NEXT_PUBLIC_SOCKET_URL: SOCKET_URL,
+  },
+
+  // The History page is now Audit Logs; keep old links working.
+  async redirects() {
+    return [{ source: '/history', destination: '/audit-logs', permanent: true }];
   },
 
   // Proxy the API through the frontend's own origin so cookies stay first-party

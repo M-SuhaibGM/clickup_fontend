@@ -13,16 +13,9 @@ import type { Space } from '@/types/space';
 import type { Project } from '@/types/project';
 import SpaceIcon from './SpaceIcon';
 import { SectionAddButton, SectionLabel } from './SidebarSection';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { lazyOnOpen } from './LazyMount';
+
+const DeleteSpaceDialog = lazyOnOpen(() => import('./DeleteSpaceDialog'), { slideIn: true });
 
 const EMPTY_PROJECTS: Project[] = [];
 const iconBtn =
@@ -124,27 +117,14 @@ export default function SpaceTree({ isAdmin, onCreateProject, onCreateSpace }: P
         )}
       </div>
 
-      <AlertDialog open={!!spaceToDelete} onOpenChange={(open) => { if (!open && !deleting) setSpaceToDelete(null); }}>
-        <AlertDialogContent className="bg-[color:var(--c-232426)] border-[color:var(--c-333438)] text-[color:var(--c-white)]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete space</AlertDialogTitle>
-            <AlertDialogDescription className="text-[color:var(--c-8a8c91)]">
-              Delete <span className="font-semibold text-[color:var(--c-white)]">&quot;{spaceToDelete?.name}&quot;</span>?{' '}
-              {doomedProjects > 0
-                ? `Its ${doomedProjects} project${doomedProjects === 1 ? '' : 's'}, their channels, lists and tasks will be permanently removed.`
-                : 'This space has no projects.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting} className="bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)] border-[color:var(--c-333438)] hover:bg-[color:var(--c-333438)]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDelete(); }} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
-              {deleting ? 'Deleting…' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteSpaceDialog
+        open={!!spaceToDelete}
+        spaceName={spaceToDelete?.name}
+        doomedProjects={doomedProjects}
+        deleting={deleting}
+        onOpenChange={(open) => { if (!open && !deleting) setSpaceToDelete(null); }}
+        onConfirm={confirmDelete}
+      />
     </>
   );
 }

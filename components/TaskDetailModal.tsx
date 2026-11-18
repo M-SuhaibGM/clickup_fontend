@@ -1,100 +1,44 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  Ban, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, CircleDashed, Clock,
+  Flag, GitFork, Hourglass, Link2, ListTodo, Loader2, MessageSquare, MoreHorizontal, Paperclip, Plus, Share2, Tag,
+  Trash2, User as UserIcon, X, FileText, CornerLeftUp,
+} from 'lucide-react';
+import { api } from '@/lib/api';
+import { apiError } from '@/lib/apiError';
+import { UploadDropzone } from '@/lib/uploadthing';
+import { formatMinutes, parseDuration } from '@/lib/duration';
+import { pushRecent } from '@/lib/recents';
+import { startOfDay } from '@/lib/dateUtils';
+import { PRIORITY_OPTIONS, STATUSES } from '@/lib/taskColumns';
 import { useTaskStore } from '@/store/taskStore';
 import { useUserStore } from '@/store/userStore';
-import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
-import type { Task, Comment } from '@/types/task';
-import { api } from '@/lib/api';
-import { UploadDropzone } from '@/lib/uploadthing';
-import Image from 'next/image';
-import {
-  X,
-  Circle,
-  CheckCircle2,
-  CircleDashed,
-  Calendar,
-  Clock,
-  Tag,
-  User as UserIcon,
-  Flag,
-  ListTodo,
-  MessageSquare,
-  Paperclip,
-  Plus,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
-  FileText,
-  Pencil,
-  Trash2,
-  MoreHorizontal,
-  ArrowUpRight,
-  Sparkles,
-  Loader2,
-  Bell,
-  Search,
-  Send,
-  Ban,
-} from 'lucide-react';
+import { useProjectStore } from '@/store/projectStore';
+import { useTeamStore } from '@/store/teamStore';
+import { useWorkspaceStore } from '@/store/workspaceStore';
+import type { Comment, Task, TimeEntry } from '@/types/task';
+import SpaceIcon from './SpaceIcon';
+import UserAvatar from './UserAvatar';
+import { FieldRow, popoverCls, useDismiss, valueBtn } from './task/FieldRow';
+import DatePopover, { type DateField } from './task/DatePopover';
+import TagsField from './task/TagsField';
+import AssigneePopover from './task/AssigneePopover';
+import TimeEntryPopover, { type ManualTimeInput } from './task/TimeEntryPopover';
+import CommentsPanel from './task/CommentsPanel';
+import { TimeLogPanel, TrackTimeField } from './task/TimePanel';
 
-const STATUSES = [
-  { value: 'TODO', label: 'TO DO', icon: Circle, color: '#8a8c91' },
-  { value: 'IN_PROGRESS', label: 'IN PROGRESS', icon: CircleDashed, color: '#7c3aed' },
-  { value: 'DONE', label: 'COMPLETE', icon: CheckCircle2, color: '#22c55e' },
-];
+const STATUS_ICON = { TODO: Circle, IN_PROGRESS: CircleDashed, DONE: CheckCircle2 } as const;
+const STATUS_COLOR = { TODO: '#8a8c91', IN_PROGRESS: '#3b82f6', DONE: '#22c55e' } as const;
+const NEXT_STATUS = { TODO: 'IN_PROGRESS', IN_PROGRESS: 'DONE', DONE: 'DONE' } as const;
 
-const PRIORITIES = [
-  { value: 'LOW', label: 'Low', color: '#8a8c91' },
-  { value: 'NORMAL', label: 'Normal', color: '#3b82f6' },
-  { value: 'HIGH', label: 'High', color: '#f59e0b' },
-  { value: 'URGENT', label: 'Urgent', color: '#ef4444' },
-];
+type Popup = 'status' | 'assignee' | 'priority' | 'dates' | 'estimate' | 'time' | 'menu' | null;
+type Side = 'comments' | 'time';
 
-function getQuickDates() {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-  const thisWeekend = new Date(today);
-  const dow = today.getDay();
-  thisWeekend.setDate(thisWeekend.getDate() + (dow === 6 ? 7 : 6 - dow));
-  const nextWeek = new Date(today);
-  nextWeek.setDate(nextWeek.getDate() + (dow === 1 ? 7 : (8 - dow) % 7));
-  const nextWeekend = new Date(thisWeekend); nextWeekend.setDate(nextWeekend.getDate() + 7);
-  const twoWeeks = new Date(today); twoWeeks.setDate(twoWeeks.getDate() + 14);
-  const fourWeeks = new Date(today); fourWeeks.setDate(fourWeeks.getDate() + 28);
-  const dayName = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short' });
-  const dateFmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-  return [
-    { label: 'Today', hint: dayName(today), date: today },
-    { label: 'Tomorrow', hint: dayName(tomorrow), date: tomorrow },
-    { label: 'This weekend', hint: dayName(thisWeekend), date: thisWeekend },
-    { label: 'Next week', hint: dateFmt(nextWeek), date: nextWeek },
-    { label: 'Next weekend', hint: dateFmt(nextWeekend), date: nextWeekend },
-    { label: '2 weeks', hint: dateFmt(twoWeeks), date: twoWeeks },
-    { label: '4 weeks', hint: dateFmt(fourWeeks), date: fourWeeks },
-  ];
-}
-
-function getCalendarDays(year: number, month: number) {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startDow = firstDay.getDay();
-  const totalDays = lastDay.getDate();
-  const days: { day: number; currentMonth: boolean }[] = [];
-  const prevLast = new Date(year, month, 0).getDate();
-  for (let i = startDow - 1; i >= 0; i--) days.push({ day: prevLast - i, currentMonth: false });
-  for (let d = 1; d <= totalDays; d++) days.push({ day: d, currentMonth: true });
-  const remaining = 42 - days.length;
-  for (let d = 1; d <= remaining; d++) days.push({ day: d, currentMonth: false });
-  return days;
-}
-
-interface TaskDetailModalProps {
+interface Props {
   taskId: string;
   listId: string;
   open: boolean;
@@ -102,977 +46,785 @@ interface TaskDetailModalProps {
   isAdmin: boolean;
 }
 
-export default function TaskDetailModal({ taskId, listId, open, onClose, isAdmin }: TaskDetailModalProps) {
-  const router = useRouter();
+// The inner component only exists while the modal is open, so every open starts from a clean slate
+export default function TaskDetailModal(props: Props) {
+  if (!props.open || !props.taskId) return null;
+  return <TaskDetail key={props.taskId} {...props} />;
+}
+
+const byStartDesc = (a: TimeEntry, b: TimeEntry) => Date.parse(b.startedAt) - Date.parse(a.startedAt);
+
+function TaskDetail({ taskId, listId, onClose, isAdmin }: Props) {
   const updateTask = useTaskStore((s) => s.updateTask);
+  const createTask = useTaskStore((s) => s.createTask);
   const deleteTask = useTaskStore((s) => s.deleteTask);
+  const listTasks = useTaskStore((s) => s.tasksByList[listId]);
   const users = useUserStore((s) => s.users);
-  const currentUser = useAuthStore((s) => s.user);
+  const me = useAuthStore((s) => s.user);
+  const projects = useProjectStore((s) => s.projects);
+  const teams = useTeamStore((s) => s.teams);
+  const workspaceId = useWorkspaceStore((s) => s.activeWorkspace?.id);
 
+  const [viewId, setViewId] = useState(taskId); // the task shown; changes when you open a subtask / next task
   const [task, setTask] = useState<Task | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Form state
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('TODO');
-  const [priority, setPriority] = useState('NORMAL');
-  const [dueDate, setDueDate] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
-  const [attachments, setAttachments] = useState<string[]>([]);
-
-  // UI state
-  const [saving, setSaving] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [postingComment, setPostingComment] = useState(false);
-  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [descDraft, setDescDraft] = useState('');
+  const [popup, setPopup] = useState<Popup>(null);
+  const [dateTab, setDateTab] = useState<'start' | 'due'>('due');
+  const [side, setSide] = useState<Side>('comments');
+  const [estimateDraft, setEstimateDraft] = useState('');
   const [subtasksOpen, setSubtasksOpen] = useState(true);
   const [newSubtask, setNewSubtask] = useState('');
   const [addingSubtask, setAddingSubtask] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editCommentText, setEditCommentText] = useState('');
   const [showAttachments, setShowAttachments] = useState(false);
-  const [showDateDropdown, setShowDateDropdown] = useState(false);
-  const [calMonth, setCalMonth] = useState(new Date().getMonth());
-  const [calYear, setCalYear] = useState(new Date().getFullYear());
-  const [confirmDialog, setConfirmDialog] = useState<{
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
+  const [timerBusy, setTimerBusy] = useState(false);
+  const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
-  const assigneeRef = useRef<HTMLDivElement>(null);
-  const statusRef = useRef<HTMLDivElement>(null);
-  const priorityRef = useRef<HTMLDivElement>(null);
-  const dateRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
-  // Load task data
+  // ── Load ──
   useEffect(() => {
-    if (!open || !taskId) return;
-    setLoading(true);
-    (async () => {
-      try {
-        const { data } = await api.get<{ task: Task }>(`/tasks/${taskId}`);
+    let cancelled = false;
+    api.get<{ task: Task }>(`/tasks/${viewId}`)
+      .then(({ data }) => {
+        if (cancelled) return;
         setTask(data.task);
-        setTitle(data.task.title);
-        setDescription(data.task.description ?? '');
-        setStatus(data.task.status);
-        setPriority(data.task.priority);
-        setDueDate(data.task.dueDate ? data.task.dueDate.slice(0, 10) : '');
-        setAssigneeId(data.task.assigneeId ?? '');
-        setAttachments(data.task.attachments || []);
-      } catch {
+        pushRecent({ kind: 'task', id: data.task.id, title: data.task.title, context: data.task.list?.project.name, listId: data.task.listId });
+        setTitleDraft(data.task.title);
+        setDescDraft(data.task.description ?? '');
+      })
+      .catch(() => {
+        if (cancelled) return;
         toast.error('Failed to load task');
-        onClose();
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [open, taskId, onClose]);
+        onCloseRef.current();
+      });
+    return () => { cancelled = true; };
+  }, [viewId]);
 
-  // Close on Escape
   useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (assigneeRef.current && !assigneeRef.current.contains(e.target as Node)) setShowAssigneeDropdown(false);
-      if (statusRef.current && !statusRef.current.contains(e.target as Node)) setShowStatusDropdown(false);
-      if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) setShowPriorityDropdown(false);
-      if (dateRef.current && !dateRef.current.contains(e.target as Node)) setShowDateDropdown(false);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCloseRef.current();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const handleSave = useCallback(async (field: string, value: any) => {
-    if (!task || !isAdmin) return;
-    setSaving(true);
+  const loading = !task || task.id !== viewId;
+  const isAssignee = !!me && task?.assigneeId === me.id;
+  const runningMine = !!task?.timeEntries?.some((e) => !e.endedAt && e.userId === me?.id);
+  const patchTask = (fn: (t: Task) => Task) => setTask((t) => (t ? fn(t) : t));
+
+  // ── Saving ──
+  /** Optimistic update; the server's copy replaces ours when it answers. */
+  const save = async (patch: Partial<Task>) => {
+    if (!task) return;
+    const before = task;
+    setTask({ ...task, ...patch });
     try {
-      await updateTask(task.id, listId, { [field]: value });
+      setTask(await updateTask(task.id, task.listId, patch));
     } catch {
-      toast.error('Failed to update task');
-    } finally {
-      setSaving(false);
-    }
-  }, [task, listId, isAdmin, updateTask]);
-
-  const handleStatusChange = async (newStatus: string) => {
-    setStatus(newStatus);
-    setShowStatusDropdown(false);
-    await handleSave('status', newStatus);
-  };
-
-  const handlePriorityChange = async (newPriority: string) => {
-    setPriority(newPriority);
-    setShowPriorityDropdown(false);
-    await handleSave('priority', newPriority);
-  };
-
-  const handleAssigneeChange = async (userId: string) => {
-    setAssigneeId(userId);
-    setShowAssigneeDropdown(false);
-    await handleSave('assigneeId', userId || null);
-  };
-
-  const handleDueDateChange = async (date: string) => {
-    setDueDate(date);
-    await handleSave('dueDate', date ? new Date(date).toISOString() : null);
-  };
-
-  const handleDateSelect = async (date: Date | null) => {
-    setShowDateDropdown(false);
-    if (date) {
-      const iso = date.toISOString().slice(0, 10);
-      setDueDate(iso);
-      await handleSave('dueDate', date.toISOString());
-    } else {
-      setDueDate('');
-      await handleSave('dueDate', null);
+      setTask(before); // the store already toasted
     }
   };
 
-  const handleTitleBlur = async () => {
-    if (title.trim() && title !== task?.title) {
-      await handleSave('title', title.trim());
+  const setStatus = (status: Task['status']) => { setPopup(null); if (task && status !== task.status) save({ status }); };
+  const pickDate = (field: DateField, d: Date | null) => {
+    if (!task) return;
+    const other = field === 'startDate' ? task.dueDate : task.startDate;
+    if (d && other) {
+      const [a, b] = field === 'startDate' ? [startOfDay(d), startOfDay(new Date(other))] : [startOfDay(new Date(other)), startOfDay(d)];
+      if (a > b) return toast.error('The start date cannot be after the due date');
     }
+    save({ [field]: d ? d.toISOString() : null } as Partial<Task>);
+  };
+  const saveEstimate = () => {
+    const raw = estimateDraft.trim();
+    setPopup(null);
+    if (!raw) return save({ estimateMinutes: null });
+    const m = parseDuration(raw);
+    if (!m) return toast.error('Use a format like 2h, 1h 30m or 45m');
+    save({ estimateMinutes: m });
   };
 
-  const handleDescriptionBlur = async () => {
-    if (description !== (task?.description ?? '')) {
-      await handleSave('description', description.trim() || null);
-    }
+  // ── Navigation ──
+  const topLevel = useMemo(() => (listTasks ?? []).filter((t) => !t.parentId), [listTasks]);
+  const rootId = task?.parentId ?? task?.id;
+  const rootIndex = topLevel.findIndex((t) => t.id === rootId);
+  const go = (delta: number) => { const t = topLevel[rootIndex + delta]; if (t) { setPopup(null); setViewId(t.id); } };
+  const parentTitle = task?.parentId ? listTasks?.find((t) => t.id === task.parentId)?.title ?? 'Parent task' : null;
+
+  const project = task?.list ? projects.find((p) => p.id === task.list!.projectId) : undefined;
+  const space = project?.space;
+
+  const assignTo = (u: { id: string; name: string; avatar: string | null } | null) => {
+    setPopup(null);
+    save(u ? { assigneeId: u.id, assignee: { id: u.id, name: u.name, avatar: u.avatar } } : { assigneeId: null, assignee: null });
   };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim() || postingComment || !task) return;
-    const text = newComment.trim();
-    setNewComment('');
-    setPostingComment(true);
-
-    setTask(prev => prev ? {
-      ...prev,
-      comments: [...(prev.comments ?? []), {
-        id: 'temp-' + Date.now(),
-        taskId: prev.id,
-        text,
-        createdAt: new Date().toISOString(),
-        userId: currentUser?.id ?? '',
-        user: { id: currentUser?.id ?? '', name: currentUser?.name ?? 'You', avatar: currentUser?.avatar ?? null },
-      }],
-    } : prev);
-
+  /** Adds the person with this email to the workspace (like Invite), then assigns the task to them. */
+  const inviteAndAssign = async (email: string) => {
+    if (!workspaceId) return;
     try {
-      await api.post(`/tasks/${task.id}/comments`, { text });
-      const res = await api.get<{ task: Task }>(`/tasks/${task.id}`);
-      setTask(res.data.task);
-    } catch {
-      toast.error('Failed to add comment');
-      const res = await api.get<{ task: Task }>(`/tasks/${task.id}`);
-      setTask(res.data.task);
-    } finally {
-      setPostingComment(false);
+      const { data } = await api.post<{ user: { id: string; name: string; avatar: string | null } }>(`/workspaces/${workspaceId}/members`, { email });
+      await useUserStore.getState().fetchUsers(workspaceId);
+      toast.success(`${data.user.name} was added to the workspace`);
+      assignTo(data.user);
+    } catch (err) {
+      toast.error(apiError(err, 'Could not add that person'));
     }
   };
 
-  const handleEditComment = async (commentId: string) => {
+  const copyLink = async () => {
+    setPopup(null);
     try {
-      await api.patch(`/tasks/comments/${commentId}`, { text: editCommentText });
-      setTask(prev => prev ? {
-        ...prev,
-        comments: prev.comments?.map(c => c.id === commentId ? { ...c, text: editCommentText } : c),
-      } : prev);
-      setEditingCommentId(null);
-      toast.success('Comment updated');
+      await navigator.clipboard.writeText(`${window.location.origin}/tasks/${viewId}`);
+      toast.success('Link copied');
     } catch {
-      toast.error('Failed to update comment');
+      toast.error('Could not copy the link');
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
+  // ── Subtasks ──
+  const subtasks = task?.subtasks ?? [];
+  const doneSubtasks = subtasks.filter((s) => s.status === 'DONE').length;
+
+  const toggleSubtask = async (st: Task) => {
+    const status = st.status === 'DONE' ? 'TODO' : 'DONE';
+    patchTask((t) => ({ ...t, subtasks: t.subtasks?.map((s) => (s.id === st.id ? { ...s, status } : s)) }));
     try {
-      await api.delete(`/tasks/comments/${commentId}`);
-      setTask(prev => prev ? {
-        ...prev,
-        comments: prev.comments?.filter(c => c.id !== commentId),
-      } : prev);
-      toast.success('Comment deleted');
+      await updateTask(st.id, listId, { status });
     } catch {
-      toast.error('Failed to delete comment');
+      patchTask((t) => ({ ...t, subtasks: t.subtasks?.map((s) => (s.id === st.id ? { ...s, status: st.status } : s)) }));
     }
   };
 
-  const handleToggleSubtask = async (subtask: Task) => {
-    const newStatus = subtask.status === 'DONE' ? 'TODO' : 'DONE';
-    setTask(prev => prev ? {
-      ...prev,
-      subtasks: prev.subtasks?.map(st => st.id === subtask.id ? { ...st, status: newStatus } : st),
-    } : prev);
-    try {
-      await api.patch(`/tasks/${subtask.id}`, { status: newStatus });
-    } catch {
-      setTask(prev => prev ? {
-        ...prev,
-        subtasks: prev.subtasks?.map(st => st.id === subtask.id ? { ...st, status: subtask.status } : st),
-      } : prev);
-      toast.error('Failed to update subtask');
-    }
-  };
-
-  const handleAddSubtask = async () => {
-    if (!newSubtask.trim() || addingSubtask || !task) return;
+  const addSubtask = async () => {
+    const name = newSubtask.trim();
+    if (!name || addingSubtask || !task) return;
     setAddingSubtask(true);
     try {
-      const { data } = await api.post<{ task: Task }>(`/lists/${listId}/tasks`, {
-        title: newSubtask.trim(),
-        parentId: task.id,
-      });
-      setTask(prev => prev ? { ...prev, subtasks: [...(prev.subtasks ?? []), data.task] } : prev);
+      const created = await createTask(listId, { title: name, parentId: task.id });
+      patchTask((t) => ({ ...t, subtasks: [...(t.subtasks ?? []), created] }));
       setNewSubtask('');
-    } catch {
-      toast.error('Failed to add subtask');
-    } finally {
+    } catch { /* the store already toasted */ } finally {
       setAddingSubtask(false);
     }
   };
 
-  const handleDeleteSubtask = (subtask: Task) => {
-    setConfirmDialog({
-      title: 'Delete Subtask',
-      message: `Are you sure you want to delete "${subtask.title}"? This action cannot be undone.`,
+  const askDeleteSubtask = (st: Task) =>
+    setConfirm({
+      title: 'Delete subtask',
+      message: `Delete "${st.title}"? This can't be undone.`,
       onConfirm: async () => {
-        setConfirmDialog(null);
-        setTask(prev => prev ? { ...prev, subtasks: prev.subtasks?.filter(st => st.id !== subtask.id) } : prev);
-        try {
-          await deleteTask(subtask.id, listId);
-          toast.success('Subtask deleted');
-        } catch {
-          setTask(prev => prev ? { ...prev, subtasks: [...(prev.subtasks ?? []), subtask] } : prev);
-          toast.error('Failed to delete subtask');
-        }
+        setConfirm(null);
+        patchTask((t) => ({ ...t, subtasks: t.subtasks?.filter((s) => s.id !== st.id) }));
+        try { await deleteTask(st.id, listId); } catch { patchTask((t) => ({ ...t, subtasks: [...(t.subtasks ?? []), st] })); }
+      },
+    });
+
+  const askDeleteTask = () => {
+    setPopup(null);
+    if (!task) return;
+    setConfirm({
+      title: 'Delete task',
+      message: 'Delete this task along with its subtasks, comments and tracked time? This can\'t be undone.',
+      onConfirm: async () => {
+        setConfirm(null);
+        try { await deleteTask(task.id, listId); onClose(); } catch { /* toasted */ }
       },
     });
   };
 
-  const handleDeleteTask = () => {
-    if (!task || !isAdmin) return;
-    setConfirmDialog({
-      title: 'Delete Task',
-      message: 'Are you sure you want to delete this task and all its subtasks and comments? This action cannot be undone.',
+  // ── Comments ──
+  const refreshComments = async () => {
+    if (!task) return;
+    const { data } = await api.get<{ task: Task }>(`/tasks/${task.id}`);
+    patchTask((t) => ({ ...t, comments: data.task.comments }));
+    useTaskStore.getState().fetchTasks(listId); // keep the comment counts in the list/board fresh
+  };
+
+  const addComment = async (text: string) => {
+    if (!task) return;
+    try {
+      await api.post(`/tasks/${task.id}/comments`, { text });
+      await refreshComments();
+    } catch (err) {
+      toast.error(apiError(err, 'Failed to add comment'));
+      throw err;
+    }
+  };
+  const editComment = async (id: string, text: string) => {
+    try {
+      await api.patch(`/tasks/comments/${id}`, { text });
+      patchTask((t) => ({ ...t, comments: t.comments?.map((c: Comment) => (c.id === id ? { ...c, text } : c)) }));
+    } catch (err) {
+      toast.error(apiError(err, 'Failed to update comment'));
+      throw err;
+    }
+  };
+  const askDeleteComment = (id: string) =>
+    setConfirm({
+      title: 'Delete comment',
+      message: 'Delete this comment? This can\'t be undone.',
       onConfirm: async () => {
-        setConfirmDialog(null);
+        setConfirm(null);
         try {
-          await deleteTask(task.id, listId);
-          toast.success('Task deleted');
-          onClose();
-        } catch {
-          toast.error('Failed to delete task');
+          await api.delete(`/tasks/comments/${id}`);
+          patchTask((t) => ({ ...t, comments: t.comments?.filter((c) => c.id !== id) }));
+          useTaskStore.getState().fetchTasks(listId);
+        } catch (err) {
+          toast.error(apiError(err, 'Failed to delete comment'));
         }
       },
     });
+
+  // ── Time tracking ──
+  const entries = useMemo(() => [...(task?.timeEntries ?? [])].sort(byStartDesc), [task?.timeEntries]);
+
+  const withTimer = async (fn: () => Promise<void>, fallback: string) => {
+    setTimerBusy(true);
+    try { await fn(); } catch (err) { toast.error(apiError(err, fallback)); } finally { setTimerBusy(false); }
   };
 
-  const handleFileUpload = async (uploadedFiles: { url: string }[]) => {
+  const startTimer = () =>
+    task && withTimer(async () => {
+      const { data } = await api.post<{ entry: TimeEntry }>(`/tasks/${task.id}/time/start`);
+      // starting a timer stops this user's other running one — mirror that for this task's entries
+      patchTask((t) => ({
+        ...t,
+        timeEntries: [data.entry, ...(t.timeEntries ?? []).map((e) => (!e.endedAt && e.userId === me?.id ? { ...e, endedAt: data.entry.startedAt } : e))],
+      }));
+    }, 'Failed to start the timer');
+
+  const stopTimer = () =>
+    task && withTimer(async () => {
+      const { data } = await api.post<{ entry: TimeEntry }>(`/tasks/${task.id}/time/stop`);
+      patchTask((t) => ({ ...t, timeEntries: t.timeEntries?.map((e) => (e.id === data.entry.id ? data.entry : e)) }));
+    }, 'Failed to stop the timer');
+
+  const addTime = async (input: ManualTimeInput) => {
     if (!task) return;
-    const newUrls = uploadedFiles.map(f => f.url);
-    const allUrls = [...attachments, ...newUrls];
-    setAttachments(allUrls);
+    // Work out the exact start/end HERE, in the user's own timezone. Sending only a "YYYY-MM-DD" made the
+    // server read it as UTC midnight, which for anyone ahead of UTC looked like the future and was rejected.
+    let payload: ManualTimeInput = input;
+    if (input.minutes && !input.startedAt) {
+      const day = input.date ? new Date(`${input.date}T12:00:00`) : new Date(); // local midday of the chosen day
+      const end = day.toDateString() === new Date().toDateString() ? new Date() : day;
+      payload = {
+        startedAt: new Date(end.getTime() - input.minutes * 60_000).toISOString(),
+        endedAt: end.toISOString(),
+        note: input.note,
+      };
+    }
     try {
-      await updateTask(task.id, listId, { attachments: allUrls });
-      toast.success(`${uploadedFiles.length} file(s) attached`);
-    } catch {
-      toast.error('Failed to save attachments');
+      const { data } = await api.post<{ entry: TimeEntry }>(`/tasks/${task.id}/time`, payload);
+      patchTask((t) => ({ ...t, timeEntries: [data.entry, ...(t.timeEntries ?? [])] }));
+      toast.success('Time added');
+    } catch (err) {
+      toast.error(apiError(err, 'Failed to add time'));
+      throw err;
     }
   };
 
-  const handleRemoveFile = async (urlToRemove: string) => {
-    if (!task) return;
-    const newUrls = attachments.filter(url => url !== urlToRemove);
-    setAttachments(newUrls);
+  const deleteTime = async (entry: TimeEntry) => {
+    patchTask((t) => ({ ...t, timeEntries: t.timeEntries?.filter((e) => e.id !== entry.id) }));
     try {
-      await updateTask(task.id, listId, { attachments: newUrls });
-      toast.success('File removed');
-    } catch {
-      toast.error('Failed to remove file');
+      await api.delete(`/tasks/time/${entry.id}`);
+    } catch (err) {
+      patchTask((t) => ({ ...t, timeEntries: [entry, ...(t.timeEntries ?? [])] }));
+      toast.error(apiError(err, 'Failed to delete time entry'));
     }
   };
 
-  if (!open) return null;
+  // ── Attachments ──
+  const attachments = task?.attachments ?? [];
+  const saveAttachments = (urls: string[]) => save({ attachments: urls });
 
-  const selectedStatus = STATUSES.find(s => s.value === status) ?? STATUSES[0];
-  const selectedPriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[1];
-  const selectedAssignee = users.find(u => u.id === assigneeId);
-  const filteredUsers = users.filter(u =>
-    u.name?.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
-    u.email?.toLowerCase().includes(assigneeSearch.toLowerCase())
-  );
-  const completedSubtasks = task?.subtasks?.filter(st => st.status === 'DONE').length ?? 0;
-  const totalSubtasks = task?.subtasks?.length ?? 0;
-  const StatusIcon = selectedStatus.icon;
-  const createdDate = task?.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  // ── Popover wiring ──
+  const statusRef = useDismiss<HTMLDivElement>(popup === 'status', () => setPopup(null));
+  const priorityRef = useDismiss<HTMLDivElement>(popup === 'priority', () => setPopup(null));
+  const estimateRef = useDismiss<HTMLDivElement>(popup === 'estimate', () => setPopup(null));
+  const menuRef = useDismiss<HTMLDivElement>(popup === 'menu', () => setPopup(null));
+  // Start and Due share one picker: the other button switches tabs, the same button closes it
+  const openDates = (tab: 'start' | 'due') => {
+    if (popup === 'dates' && dateTab !== tab) return setDateTab(tab);
+    setDateTab(tab);
+    setPopup(popup === 'dates' ? null : 'dates');
+  };
+  const toggle = (p: Exclude<Popup, null>) => setPopup((cur) => (cur === p ? null : p));
+
+  const status = task?.status ?? 'TODO';
+  const StatusIcon = STATUS_ICON[status];
+  const priority = PRIORITY_OPTIONS.find((p) => p.value === task?.priority);
+  const assignee = users.find((u) => u.id === task?.assigneeId) ?? (task?.assignee ? { ...task.assignee, email: '' } : undefined);
+  const start = task?.startDate ?? null;
+  const due = task?.dueDate ?? null;
+  const overdue = !!due && status !== 'DONE' && startOfDay(new Date(due)) < startOfDay(new Date());
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const createdLabel = task ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[5vh]" onClick={onClose}>
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[1000] flex items-start justify-center pt-[4vh]" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-      {/* Modal */}
       <div
-        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Task details"
         onClick={(e) => e.stopPropagation()}
-        className="relative z-10 w-[95vw] max-w-[1100px] max-h-[88vh] bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
+        className="relative z-10 flex h-[90vh] w-[96vw] max-w-[1240px] flex-col overflow-hidden rounded-xl border border-[color:var(--c-333438)] bg-[color:var(--c-1e1f21)] shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
       >
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[color:var(--c-333438)] bg-[color:var(--c-232426)] shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-xs font-medium text-[color:var(--c-white)]">
-              <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" />
-              Task
-              <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />
-            </div>
-            <div className="flex items-center gap-1 text-[color:var(--c-8a8c91)]">
-              <button className="p-1 hover:bg-[color:var(--c-333438)] rounded" title="Watchers">
-                <Bell className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-[11px]">1</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => router.push(`/tasks/${taskId}`)}
-              className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] rounded transition"
-              title="Open full page"
-            >
-              <ArrowUpRight className="h-4 w-4" />
+        {/* ── Top bar ── */}
+        <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-[color:var(--c-333438)] px-3">
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px] text-[color:var(--c-8a8c91)]">
+            <button onClick={() => go(-1)} disabled={rootIndex <= 0} aria-label="Previous task" title="Previous task" className="rounded p-1 hover:bg-[color:var(--c-2a2b2e)] hover:text-[color:var(--c-white)] disabled:opacity-30">
+              <ChevronUp className="h-4 w-4" />
             </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] rounded transition"
-            >
+            <button onClick={() => go(1)} disabled={rootIndex < 0 || rootIndex >= topLevel.length - 1} aria-label="Next task" title="Next task" className="rounded p-1 hover:bg-[color:var(--c-2a2b2e)] hover:text-[color:var(--c-white)] disabled:opacity-30">
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            <span className="mx-1 h-4 w-px bg-[color:var(--c-333438)]" />
+            {space && (
+              <>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <SpaceIcon name={space.name} icon={space.icon} color={space.color} size={16} className="rounded-md" /> {space.name}
+                </span>
+                <span>/</span>
+              </>
+            )}
+            <span className="flex min-w-0 items-center gap-1.5 font-semibold text-[color:var(--c-white)]">
+              <ListTodo className="h-4 w-4 shrink-0" /> <span className="truncate">{task?.list?.project.name ?? ''}</span>
+            </span>
+            {task?.list && <span className="hidden truncate sm:inline">/ {task.list.name}</span>}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
+            <button onClick={copyLink} className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)]">
+              <Share2 className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)]" /> Share
+            </button>
+            <div className="relative" ref={menuRef}>
+              <button data-popover-trigger onClick={() => toggle('menu')} aria-label="More actions" className="rounded-md p-1.5 text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-2a2b2e)] hover:text-[color:var(--c-white)]">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+              {popup === 'menu' && (
+                <div className={`${popoverCls} left-auto right-0 w-48 p-1`}>
+                  <button onClick={copyLink} className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)]">
+                    <Link2 className="h-3.5 w-3.5" /> Copy link
+                  </button>
+                  {isAdmin && (
+                    <button onClick={askDeleteTask} className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] text-red-400 hover:bg-[color:var(--c-333438)]">
+                      <Trash2 className="h-3.5 w-3.5" /> Delete task
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-2a2b2e)] hover:text-[color:var(--c-white)]">
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
+        {loading || !task ? (
+          <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
           </div>
-        ) : task ? (
-          <div className="flex flex-1 overflow-hidden">
-            {/* ───────── LEFT PANEL ───────── */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5 border-r border-[color:var(--c-333438)]">
-              {/* Task Title */}
-              <div>
-                {isAdmin ? (
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    onBlur={handleTitleBlur}
-                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-full text-xl font-bold text-[color:var(--c-white)] bg-transparent outline-none border-b-2 border-transparent focus:border-indigo-500 pb-1 transition"
-                    placeholder="Task name"
-                  />
-                ) : (
-                  <h2 className="text-xl font-bold text-[color:var(--c-white)]">{title}</h2>
-                )}
-              </div>
-
-              {/* Fields Grid */}
-              <div className="space-y-3">
-                {/* Status */}
-                <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Status
-                  </span>
-                  <div className="relative" ref={statusRef}>
-                    <button
-                      onClick={() => isAdmin && setShowStatusDropdown(!showStatusDropdown)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-xs font-bold text-[color:var(--c-white)] hover:border-[#555] transition"
-                    >
-                      <StatusIcon className="h-3.5 w-3.5" style={{ color: selectedStatus.color }} />
-                      {selectedStatus.label}
-                      {isAdmin && <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />}
+        ) : (
+          <div className="flex min-h-0 flex-1">
+            {/* ───────── Left: the task ───────── */}
+            <div className="min-w-0 flex-1 overflow-y-auto">
+              <div className="mx-auto max-w-[780px] space-y-6 px-8 py-6">
+                <div>
+                  {parentTitle && (
+                    <button onClick={() => setViewId(task.parentId!)} className="mb-2 flex items-center gap-1.5 text-[12.5px] text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">
+                      <CornerLeftUp className="h-3.5 w-3.5" /> {parentTitle}
                     </button>
-                    {showStatusDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-xl z-20 py-1 w-44">
-                        {STATUSES.map(s => {
-                          const Icon = s.icon;
-                          return (
-                            <button
-                              key={s.value}
-                              onClick={() => handleStatusChange(s.value)}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
-                            >
-                              <Icon className="h-3.5 w-3.5" style={{ color: s.color }} />
-                              {s.label}
-                              {s.value === status && <Check className="h-3 w-3 ml-auto text-indigo-400" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Assignees */}
-                <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
-                    <UserIcon className="h-3.5 w-3.5" /> Assignees
-                  </span>
-                  <div className="relative" ref={assigneeRef}>
-                    <button
-                      onClick={() => isAdmin && setShowAssigneeDropdown(!showAssigneeDropdown)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
-                    >
-                      {selectedAssignee ? (
-                        <span className="flex items-center gap-1.5">
-                          {selectedAssignee.avatar ? (
-                            <Image src={selectedAssignee.avatar} alt="" width={20} height={20} className="rounded-full" />
-                          ) : (
-                            <div className="h-5 w-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
-                              {selectedAssignee.name?.[0]?.toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-[color:var(--c-white)]">{selectedAssignee.name}</span>
-                        </span>
-                      ) : (
-                        <span>Empty</span>
-                      )}
-                      {isAdmin && <ChevronDown className="h-3 w-3" />}
-                    </button>
-                    {showAssigneeDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-xl z-20 w-56 p-2">
-                        <input
-                          autoFocus
-                          value={assigneeSearch}
-                          onChange={(e) => setAssigneeSearch(e.target.value)}
-                          placeholder="Search..."
-                          className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded px-2 py-1 text-xs text-[color:var(--c-white)] outline-none mb-1.5"
-                        />
-                        <div className="max-h-36 overflow-y-auto space-y-0.5">
-                          <button
-                            onClick={() => handleAssigneeChange('')}
-                            className="w-full text-left px-2 py-1.5 text-xs text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-333438)] hover:text-[color:var(--c-white)] rounded transition"
-                          >
-                            Unassigned
-                          </button>
-                          {filteredUsers.map(u => (
-                            <button
-                              key={u.id}
-                              onClick={() => handleAssigneeChange(u.id)}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] rounded transition"
-                            >
-                              {u.avatar ? (
-                                <Image src={u.avatar} alt="" width={18} height={18} className="rounded-full" />
-                              ) : (
-                                <div className="h-[18px] w-[18px] rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold">
-                                  {u.name?.[0]?.toUpperCase()}
-                                </div>
-                              )}
-                              {u.name}
-                              {u.id === assigneeId && <Check className="h-3 w-3 ml-auto text-indigo-400" />}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Dates */}
-                <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" /> Dates
-                  </span>
-                  <div className="relative" ref={dateRef}>
-                    {isAdmin ? (
-                      <>
-                        <button
-                          onClick={() => {
-                            const d = dueDate ? new Date(dueDate) : new Date();
-                            setCalMonth(d.getMonth());
-                            setCalYear(d.getFullYear());
-                            setShowDateDropdown(!showDateDropdown);
-                          }}
-                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
-                        >
-                          <Calendar className="h-3.5 w-3.5" />
-                          {dueDate ? (
-                            <span className="text-[color:var(--c-white)]">{new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                          ) : (
-                            <span>Empty</span>
-                          )}
-                          <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />
-                        </button>
-                        {showDateDropdown && (() => {
-                          const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
-                          const calDays = getCalendarDays(calYear, calMonth);
-                          const qDates = getQuickDates();
-                          const selDate = dueDate ? new Date(dueDate) : null;
-                          if (selDate) selDate.setHours(0, 0, 0, 0);
-                          return (
-                            <div className="absolute top-full left-0 mt-1 w-[460px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl z-30 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
-                              <div className="flex border-b border-[color:var(--c-333438)]">
-                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-[color:var(--c-8a8c91)] border-b-2 border-transparent">
-                                  <Calendar className="h-3.5 w-3.5" /> Start date
-                                </button>
-                                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-[color:var(--c-white)] font-semibold border-b-2 border-indigo-500">
-                                  <Calendar className="h-3.5 w-3.5" /> Due date
-                                </button>
-                              </div>
-                              <div className="flex">
-                                <div className="w-[190px] border-r border-[color:var(--c-333438)] py-1">
-                                  {qDates.map(opt => (
-                                    <button
-                                      key={opt.label}
-                                      onClick={() => handleDateSelect(opt.date)}
-                                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
-                                    >
-                                      <span>{opt.label}</span>
-                                      <span className="text-[10px] text-[color:var(--c-8a8c91)]">{opt.hint}</span>
-                                    </button>
-                                  ))}
-                                  {selDate && (
-                                    <button
-                                      onClick={() => handleDateSelect(null)}
-                                      className="w-full flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 hover:bg-[color:var(--c-333438)] transition mt-1 border-t border-[color:var(--c-333438)]"
-                                    >
-                                      <Ban className="h-3 w-3" /> Clear date
-                                    </button>
-                                  )}
-                                </div>
-                                <div className="flex-1 p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold text-[color:var(--c-white)]">
-                                      {new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                                    </span>
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }}
-                                        className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
-                                      >
-                                        <ChevronLeft className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => { const n = new Date(); setCalMonth(n.getMonth()); setCalYear(n.getFullYear()); }}
-                                        className="px-1.5 py-0.5 text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
-                                      >
-                                        Today
-                                      </button>
-                                      <button
-                                        onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }}
-                                        className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
-                                      >
-                                        <ChevronRight className="h-3.5 w-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-7 mb-1">
-                                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                                      <div key={d} className="text-center text-[10px] font-semibold text-[#555] py-1">{d}</div>
-                                    ))}
-                                  </div>
-                                  <div className="grid grid-cols-7">
-                                    {calDays.map((d, i) => {
-                                      const isToday = d.currentMonth && d.day === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear();
-                                      const isSel = d.currentMonth && selDate && d.day === selDate.getDate() && calMonth === selDate.getMonth() && calYear === selDate.getFullYear();
-                                      return (
-                                        <button
-                                          key={i}
-                                          onClick={() => d.currentMonth && handleDateSelect(new Date(calYear, calMonth, d.day))}
-                                          disabled={!d.currentMonth}
-                                          className={[
-                                            'h-7 w-7 mx-auto flex items-center justify-center text-[11px] rounded-full transition',
-                                            !d.currentMonth ? 'text-[color:var(--c-333438)]' : 'text-[color:var(--c-e5e5e5)] hover:bg-[#444]',
-                                            isToday ? 'bg-indigo-600 text-white font-bold' : '',
-                                            isSel && !isToday ? 'bg-indigo-500/30 text-indigo-300 font-bold ring-1 ring-indigo-500' : '',
-                                          ].join(' ')}
-                                        >
-                                          {d.day}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </>
-                    ) : (
-                      <span className="text-xs text-[color:var(--c-8a8c91)]">
-                        {dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Empty'}
+                  )}
+                  <div className="mb-3 flex items-center gap-2 text-[12.5px]">
+                    <span className="flex items-center gap-1.5 rounded-md border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] px-2 py-1 font-medium text-[color:var(--c-white)]">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" /> {task.parentId ? 'Subtask' : 'Task'}
+                    </span>
+                    {subtasks.length > 0 && (
+                      <span className="flex items-center gap-1 rounded-md border border-[color:var(--c-333438)] px-2 py-1 text-[color:var(--c-8a8c91)]" title={`${subtasks.length} subtask${subtasks.length === 1 ? '' : 's'}`}>
+                        <GitFork className="h-3.5 w-3.5" /> {subtasks.length}
                       </span>
                     )}
                   </div>
+
+                  {isAdmin ? (
+                    <input
+                      value={titleDraft}
+                      onChange={(e) => setTitleDraft(e.target.value)}
+                      onBlur={() => {
+                        const t = titleDraft.trim();
+                        if (!t) return setTitleDraft(task.title);
+                        if (t !== task.title) save({ title: t });
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                      placeholder="Task name"
+                      className="w-full rounded-md bg-transparent px-1 py-0.5 -mx-1 text-[30px] font-bold leading-tight text-[color:var(--c-white)] outline-none hover:bg-[color:var(--c-232426)] focus:bg-[color:var(--c-232426)]"
+                    />
+                  ) : (
+                    <h2 className="text-[30px] font-bold leading-tight text-[color:var(--c-white)]">{task.title}</h2>
+                  )}
                 </div>
 
-                {/* Priority */}
-                <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
-                    <Flag className="h-3.5 w-3.5" /> Priority
-                  </span>
-                  <div className="relative" ref={priorityRef}>
-                    <button
-                      onClick={() => isAdmin && setShowPriorityDropdown(!showPriorityDropdown)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs hover:text-[color:var(--c-white)] transition"
-                      style={{ color: selectedPriority.color }}
-                    >
-                      <Flag className="h-3.5 w-3.5" />
-                      {selectedPriority.label}
-                      {isAdmin && <ChevronDown className="h-3 w-3 text-[color:var(--c-8a8c91)]" />}
-                    </button>
-                    {showPriorityDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-xl z-20 py-1 w-36">
-                        {PRIORITIES.map(p => (
+                {/* Fields */}
+                <div className="grid grid-cols-1 gap-x-10 gap-y-1 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <FieldRow icon={CircleDashed} label="Status">
+                      <div className="flex items-center gap-1" ref={statusRef}>
+                        <div className="relative">
                           <button
-                            key={p.value}
-                            onClick={() => handlePriorityChange(p.value)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[color:var(--c-333438)] transition"
-                            style={{ color: p.color }}
+                            data-popover-trigger
+                            onClick={() => toggle('status')}
+                            className="flex items-center gap-1.5 rounded-l-md border border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] px-2.5 py-1 text-[12px] font-bold text-[color:var(--c-white)] transition hover:border-[color:var(--c-555660)]"
                           >
-                            <Flag className="h-3.5 w-3.5" />
-                            {p.label}
-                            {p.value === priority && <Check className="h-3 w-3 ml-auto text-indigo-400" />}
+                            <StatusIcon className="h-3.5 w-3.5" style={{ color: STATUS_COLOR[status] }} />
+                            {STATUSES.find((s) => s.value === status)?.label}
                           </button>
-                        ))}
+                          {popup === 'status' && (
+                            <div className={`${popoverCls} w-48 py-1`}>
+                              {STATUSES.map((s) => {
+                                const Icon = STATUS_ICON[s.value];
+                                return (
+                                  <button key={s.value} onClick={() => setStatus(s.value)} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)]">
+                                    <Icon className="h-3.5 w-3.5" style={{ color: s.color }} /> {s.label}
+                                    {s.value === status && <Check className="ml-auto h-3 w-3 text-indigo-400" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        {status !== 'DONE' && (
+                          <button onClick={() => setStatus(NEXT_STATUS[status])} aria-label="Move to the next status" title="Next status" className="-ml-1 rounded-r-md border border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] px-1.5 py-1 text-[color:var(--c-8a8c91)] transition hover:text-[color:var(--c-white)]">
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setStatus(status === 'DONE' ? 'TODO' : 'DONE')}
+                          aria-label={status === 'DONE' ? 'Reopen' : 'Mark complete'}
+                          title={status === 'DONE' ? 'Reopen' : 'Mark complete'}
+                          className={`ml-1 rounded-md border px-1.5 py-1 transition ${status === 'DONE' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] text-[color:var(--c-8a8c91)] hover:text-emerald-400'}`}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                    )}
+                    </FieldRow>
+
+                    <FieldRow icon={Calendar} label="Dates">
+                      <div className="relative flex items-center gap-1">
+                        <button
+                          data-popover-trigger
+                          disabled={!isAdmin}
+                          onClick={() => openDates('start')}
+                          className={`${valueBtn} ${start ? '!text-[color:var(--c-white)]' : ''} disabled:cursor-default`}
+                        >
+                          <Calendar className="h-3.5 w-3.5" /> {start ? fmtDate(start) : 'Start'}
+                        </button>
+                        <span className="text-[color:var(--c-8a8c91)]">→</span>
+                        <button
+                          data-popover-trigger
+                          disabled={!isAdmin}
+                          onClick={() => openDates('due')}
+                          className={`${valueBtn} ${due ? (overdue ? '!text-red-400' : '!text-[color:var(--c-white)]') : ''} disabled:cursor-default`}
+                        >
+                          <Calendar className="h-3.5 w-3.5" /> {due ? fmtDate(due) : 'Due'}
+                        </button>
+                        {popup === 'dates' && isAdmin && (
+                          <DatePopover key={dateTab} start={start} due={due} initialTab={dateTab} onPick={pickDate} onClose={() => setPopup(null)} />
+                        )}
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow icon={Clock} label="Track time">
+                      <div className="relative">
+                        <TrackTimeField entries={entries} myId={me?.id} estimateMinutes={task.estimateMinutes} busy={timerBusy} canTimer={isAssignee} canLog={isAdmin} popupOpen={popup === 'time'} onStartTimer={() => { void startTimer(); }} onOpen={() => toggle('time')} onStop={() => { void stopTimer(); }} />
+                        {popup === 'time' && me && isAdmin && (
+                          <TimeEntryPopover
+                            entries={entries}
+                            me={me}
+                            estimateMinutes={task.estimateMinutes}
+                            busy={timerBusy}
+                            canTimer={isAssignee && !runningMine}
+                            onStart={async () => { await startTimer(); }}
+                            onAdd={addTime}
+                            onClose={() => setPopup(null)}
+                          />
+                        )}
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow icon={Hourglass} label="Time estimate">
+                      <div className="relative" ref={estimateRef}>
+                        <button
+                          data-popover-trigger
+                          disabled={!isAdmin}
+                          onClick={() => { setEstimateDraft(task.estimateMinutes ? formatMinutes(task.estimateMinutes) : ''); toggle('estimate'); }}
+                          className={`${valueBtn} ${task.estimateMinutes ? '!text-[color:var(--c-white)]' : ''} disabled:cursor-default`}
+                        >
+                          {task.estimateMinutes ? formatMinutes(task.estimateMinutes) : 'Empty'}
+                        </button>
+                        {popup === 'estimate' && (
+                          <div className={`${popoverCls} w-56 p-2`}>
+                            <input
+                              autoFocus
+                              value={estimateDraft}
+                              onChange={(e) => setEstimateDraft(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && saveEstimate()}
+                              placeholder="e.g. 2h, 1h 30m, 45m"
+                              className="w-full rounded-md border border-[color:var(--c-333438)] bg-[color:var(--c-1e1f21)] px-2 py-1.5 text-[13px] text-[color:var(--c-white)] outline-none focus:border-indigo-500"
+                            />
+                            <div className="mt-2 flex justify-end gap-1.5">
+                              {task.estimateMinutes ? (
+                                <button onClick={() => { setPopup(null); save({ estimateMinutes: null }); }} className="px-2 py-1 text-[12px] text-red-400 hover:text-red-300">Clear</button>
+                              ) : null}
+                              <button onClick={saveEstimate} className="rounded bg-indigo-600 px-3 py-1 text-[12px] font-semibold text-white hover:bg-indigo-500">Save</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </FieldRow>
+                  </div>
+
+                  <div className="space-y-1">
+                    <FieldRow icon={UserIcon} label="Assignees">
+                      <div className="relative">
+                        <button data-popover-trigger disabled={!isAdmin} onClick={() => toggle('assignee')} className={`${valueBtn} disabled:cursor-default`}>
+                          {assignee ? (
+                            <span className="flex items-center gap-2 text-[color:var(--c-white)]">
+                              <UserAvatar name={assignee.name} src={assignee.avatar} size={20} /> {assignee.name}
+                            </span>
+                          ) : (
+                            'Empty'
+                          )}
+                        </button>
+                        {popup === 'assignee' && isAdmin && (
+                          <AssigneePopover
+                            users={users}
+                            teams={teams}
+                            me={me}
+                            assigneeId={task.assigneeId}
+                            onPick={assignTo}
+                            onInviteEmail={inviteAndAssign}
+                            onClose={() => setPopup(null)}
+                          />
+                        )}
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow icon={Flag} label="Priority">
+                      <div className="relative" ref={priorityRef}>
+                        <button data-popover-trigger disabled={!isAdmin} onClick={() => toggle('priority')} className={`${valueBtn} disabled:cursor-default`} style={priority && task.priority !== 'NORMAL' ? { color: priority.color } : undefined}>
+                          <Flag className="h-3.5 w-3.5" fill={priority && task.priority !== 'NORMAL' ? priority.color : 'none'} />
+                          {task.priority === 'NORMAL' ? 'Empty' : priority?.label}
+                        </button>
+                        {popup === 'priority' && (
+                          <div className={`${popoverCls} w-44 py-1`}>
+                            {PRIORITY_OPTIONS.map((p) => (
+                              <button key={p.value} onClick={() => { setPopup(null); save({ priority: p.value }); }} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-[color:var(--c-333438)]" style={{ color: p.color }}>
+                                <Flag className="h-3.5 w-3.5" fill={p.color} /> {p.label}
+                                {p.value === task.priority && <Check className="ml-auto h-3 w-3 text-indigo-400" />}
+                              </button>
+                            ))}
+                            <button onClick={() => { setPopup(null); save({ priority: 'NORMAL' }); }} className="flex w-full items-center gap-2 border-t border-[color:var(--c-333438)] px-3 py-1.5 text-xs text-[color:var(--c-8a8c91)] hover:bg-[color:var(--c-333438)] hover:text-[color:var(--c-white)]">
+                              <Ban className="h-3.5 w-3.5" /> Clear
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow icon={Tag} label="Tags">
+                      <TagsField tags={task.tags ?? []} editable={isAdmin} onChange={(tags) => save({ tags })} />
+                    </FieldRow>
                   </div>
                 </div>
 
-                {/* Tags */}
-                <div className="flex items-center gap-4">
-                  <span className="w-28 text-xs text-[color:var(--c-8a8c91)] flex items-center gap-1.5">
-                    <Tag className="h-3.5 w-3.5" /> Tags
-                  </span>
-                  <span className="text-xs text-[color:var(--c-8a8c91)]">Empty</span>
+                {/* Description */}
+                <div className="border-t border-[color:var(--c-333438)] pt-5">
+                  {isAdmin ? (
+                    <textarea
+                      value={descDraft}
+                      onChange={(e) => setDescDraft(e.target.value)}
+                      onBlur={() => {
+                        const d = descDraft.trim();
+                        if (d !== (task.description ?? '')) save({ description: d || null });
+                      }}
+                      placeholder="Add description"
+                      rows={4}
+                      className="w-full resize-y rounded-lg border border-transparent bg-transparent p-2 -m-2 text-[14px] leading-relaxed text-[color:var(--c-e5e5e5)] outline-none transition placeholder:text-[color:var(--c-8a8c91)] hover:border-[color:var(--c-333438)] focus:border-indigo-500"
+                    />
+                  ) : (
+                    <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[color:var(--c-e5e5e5)]">
+                      {task.description || <span className="italic text-[color:var(--c-8a8c91)]">No description</span>}
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              {/* Description */}
-              <div className="pt-2">
-                {isAdmin ? (
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    onBlur={handleDescriptionBlur}
-                    placeholder="Add a description..."
-                    rows={3}
-                    className="w-full bg-transparent border border-transparent hover:border-[color:var(--c-333438)] focus:border-indigo-500 rounded-lg p-3 text-sm text-[color:var(--c-e5e5e5)] outline-none resize-none transition placeholder:text-[#555]"
-                  />
-                ) : (
-                  <p className="text-sm text-[color:var(--c-e5e5e5)] whitespace-pre-wrap">
-                    {description || <span className="text-[#555] italic">No description</span>}
-                  </p>
-                )}
-              </div>
-
-              {/* Attachments */}
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowAttachments(!showAttachments)}
-                  className="flex items-center gap-2 text-xs font-semibold text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition"
-                >
-                  <Paperclip className="h-3.5 w-3.5" />
-                  Attachments {attachments.length > 0 && `(${attachments.length})`}
-                  {showAttachments ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                </button>
-                {showAttachments && (
-                  <div className="space-y-2 pl-5">
-                    {attachments.map((url, i) => {
-                      const filename = url.split('/').pop()?.split('-').pop() || 'File';
-                      return (
-                        <div key={i} className="flex items-center justify-between bg-[color:var(--c-232426)] border border-[color:var(--c-333438)] p-2 rounded group">
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[color:var(--c-e5e5e5)] hover:text-indigo-400 truncate flex-1">
-                            <FileText className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] shrink-0" />
-                            <span className="truncate">{filename}</span>
+                {/* Attachments */}
+                <div className="space-y-2">
+                  <button onClick={() => setShowAttachments((v) => !v)} className="flex items-center gap-2 text-[13px] font-semibold text-[color:var(--c-8a8c91)] transition hover:text-[color:var(--c-white)]">
+                    {showAttachments ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    <Paperclip className="h-3.5 w-3.5" /> Attachments{attachments.length > 0 && ` (${attachments.length})`}
+                  </button>
+                  {showAttachments && (
+                    <div className="space-y-2 pl-5">
+                      {attachments.map((url) => (
+                        <div key={url} className="group flex items-center justify-between rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] p-2">
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-2 text-xs text-[color:var(--c-e5e5e5)] hover:text-indigo-400">
+                            <FileText className="h-3.5 w-3.5 shrink-0 text-[color:var(--c-8a8c91)]" />
+                            <span className="truncate">{url.split('/').pop()?.split('-').pop() || 'File'}</span>
                           </a>
                           {isAdmin && (
-                            <button onClick={() => handleRemoveFile(url)} className="text-[color:var(--c-8a8c91)] hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition">
+                            <button onClick={() => saveAttachments(attachments.filter((u) => u !== url))} aria-label="Remove file" className="p-1 text-[color:var(--c-8a8c91)] opacity-0 transition hover:text-red-400 group-hover:opacity-100">
                               <X className="h-3 w-3" />
                             </button>
                           )}
                         </div>
-                      );
-                    })}
-                    {isAdmin && (
-                      <div className="rounded-lg border border-dashed border-[color:var(--c-333438)] bg-[color:var(--c-232426)]/50">
-                        <UploadDropzone
-                          endpoint="taskAttachment"
-                          onClientUploadComplete={(res) => {
-                            if (res) handleFileUpload(res.map(r => ({ url: r.ufsUrl })));
-                          }}
-                          onUploadError={(error) => { toast.error(`Upload failed: ${error.message}`); }}
-                          appearance={{
-                            container: 'border-0 bg-transparent p-2',
-                            button: 'bg-indigo-600 text-white text-xs h-7 px-3 rounded after:bg-indigo-700 ut-uploading:bg-indigo-700/50',
-                            label: 'text-xs text-[color:var(--c-8a8c91)] hover:text-indigo-400',
-                            allowedContent: 'text-[10px] text-[#555] mt-1',
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Subtasks */}
-              <div className="space-y-2 border-t border-[color:var(--c-333438)] pt-4">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => setSubtasksOpen(!subtasksOpen)}
-                    className="flex items-center gap-2 text-xs font-bold text-[color:var(--c-e5e5e5)]"
-                  >
-                    {subtasksOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                    <ListTodo className="h-3.5 w-3.5 text-indigo-400" />
-                    Subtasks
-                    {totalSubtasks > 0 && (
-                      <span className="text-[10px] text-[color:var(--c-8a8c91)] font-normal ml-1">
-                        {completedSubtasks} / {totalSubtasks} done
-                      </span>
-                    )}
-                  </button>
-                  {totalSubtasks > 0 && (
-                    <div className="w-20 h-1.5 bg-[color:var(--c-333438)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 rounded-full transition-all"
-                        style={{ width: `${totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0}%` }}
-                      />
+                      ))}
+                      {isAdmin && (
+                        <div className="rounded-lg border border-dashed border-[color:var(--c-333438)] bg-[color:var(--c-232426)]/50">
+                          <UploadDropzone
+                            endpoint="taskAttachment"
+                            onClientUploadComplete={(res) => {
+                              if (res) {
+                                saveAttachments([...attachments, ...res.map((r) => r.ufsUrl)]);
+                                toast.success(`${res.length} file(s) attached`);
+                              }
+                            }}
+                            onUploadError={(error) => { toast.error(`Upload failed: ${error.message}`); }}
+                            appearance={{
+                              container: 'border-0 bg-transparent p-2',
+                              button: 'bg-indigo-600 text-white text-xs h-7 px-3 rounded after:bg-indigo-700 ut-uploading:bg-indigo-700/50',
+                              label: 'text-xs text-[color:var(--c-8a8c91)] hover:text-indigo-400',
+                              allowedContent: 'text-[10px] text-[#666] mt-1',
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {subtasksOpen && (
-                  <div className="space-y-1 pl-1">
-                    {/* Subtask header */}
-                    {totalSubtasks > 0 && (
-                      <div className="grid grid-cols-[1fr_80px_60px] gap-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#555]">
-                        <div>Name</div>
-                        <div>Assignee</div>
-                        <div>Priority</div>
-                      </div>
-                    )}
-                    {task?.subtasks?.map(st => (
-                      <div key={st.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[color:var(--c-232426)] rounded transition group">
-                        <input
-                          type="checkbox"
-                          checked={st.status === 'DONE'}
-                          onChange={() => isAdmin && handleToggleSubtask(st)}
-                          disabled={!isAdmin}
-                          className={`h-3.5 w-3.5 rounded border-[#555] accent-indigo-500 ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-60'}`}
-                        />
-                        <span className={`text-xs flex-1 truncate ${st.status === 'DONE' ? 'line-through text-[#555]' : 'text-[color:var(--c-e5e5e5)]'}`}>
-                          {st.title}
-                        </span>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteSubtask(st)}
-                            className="p-0.5 text-[#555] hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                            title="Delete subtask"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
+                {/* Subtasks (a subtask doesn't have its own subtasks) */}
+                {!task.parentId && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setSubtasksOpen((v) => !v)} className="flex items-center gap-2 text-[14px] font-bold text-[color:var(--c-white)]">
+                        {subtasksOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        Subtasks
+                        {subtasks.length > 0 && (
+                          <span className="text-[12.5px] font-normal text-[color:var(--c-8a8c91)]">{subtasks.length - doneSubtasks} open</span>
                         )}
-                      </div>
-                    ))}
-                    {isAdmin && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <input
-                          value={newSubtask}
-                          onChange={(e) => setNewSubtask(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); }}
-                          placeholder="Add subtask..."
-                          disabled={addingSubtask}
-                          className="flex-1 bg-transparent border-b border-[color:var(--c-333438)] focus:border-indigo-500 text-xs text-[color:var(--c-white)] outline-none py-1.5 px-1 placeholder:text-[#555] transition"
-                        />
-                        <button
-                          onClick={handleAddSubtask}
-                          disabled={addingSubtask || !newSubtask.trim()}
-                          className="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 disabled:opacity-50 px-2 py-1"
-                        >
-                          {addingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                        </button>
+                      </button>
+                      {subtasks.length > 0 && (
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[color:var(--c-333438)]" title={`${doneSubtasks} of ${subtasks.length} complete`}>
+                          <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${(doneSubtasks / subtasks.length) * 100}%` }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {subtasksOpen && (
+                      <div>
+                        {subtasks.length > 0 && (
+                          <div className="grid grid-cols-[1fr_90px_90px_28px] gap-2 border-b border-[color:var(--c-333438)] px-2 py-1.5 text-[12px] text-[color:var(--c-8a8c91)]">
+                            <span>Name</span><span>Assignee</span><span>Priority</span><span />
+                          </div>
+                        )}
+                        {subtasks.map((st) => {
+                          const SI = STATUS_ICON[st.status];
+                          const sp = PRIORITY_OPTIONS.find((p) => p.value === st.priority);
+                          return (
+                            <div key={st.id} className="group grid grid-cols-[1fr_90px_90px_28px] items-center gap-2 border-b border-[color:var(--c-2a2b2e)] px-2 py-2 text-[13px] transition hover:bg-[color:var(--c-232426)]">
+                              <span className="flex min-w-0 items-center gap-2">
+                                <button onClick={() => toggleSubtask(st)} aria-label={st.status === 'DONE' ? 'Mark as to do' : 'Mark complete'} className="shrink-0 transition hover:scale-110">
+                                  <SI className="h-4 w-4" style={{ color: STATUS_COLOR[st.status] }} />
+                                </button>
+                                <button onClick={() => setViewId(st.id)} className={`truncate text-left hover:underline ${st.status === 'DONE' ? 'text-[color:var(--c-8a8c91)] line-through' : 'text-[color:var(--c-e5e5e5)]'}`}>
+                                  {st.title}
+                                </button>
+                              </span>
+                              <span>{st.assignee ? <span title={st.assignee.name}><UserAvatar name={st.assignee.name} src={st.assignee.avatar} size={22} /></span> : <span className="text-[color:var(--c-8a8c91)]">–</span>}</span>
+                              <span className="flex items-center gap-1.5 text-[12px] capitalize text-[color:var(--c-8a8c91)]">
+                                {st.priority !== 'NORMAL' && sp ? (<><Flag className="h-3.5 w-3.5" style={{ color: sp.color }} fill={sp.color} />{st.priority.toLowerCase()}</>) : '–'}
+                              </span>
+                              {isAdmin ? (
+                                <button onClick={() => askDeleteSubtask(st)} aria-label="Delete subtask" className="rounded p-1 text-[color:var(--c-8a8c91)] opacity-0 transition hover:text-red-400 group-hover:opacity-100">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              ) : <span />}
+                            </div>
+                          );
+                        })}
+                        {isAdmin && (
+                          <div className="flex items-center gap-2 px-2 py-2">
+                            <Plus className="h-4 w-4 text-[color:var(--c-8a8c91)]" />
+                            <input
+                              value={newSubtask}
+                              disabled={addingSubtask}
+                              onChange={(e) => setNewSubtask(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                              placeholder="Add Task"
+                              className="flex-1 bg-transparent text-[13px] text-[color:var(--c-white)] outline-none placeholder:text-[color:var(--c-8a8c91)]"
+                            />
+                            {addingSubtask && <Loader2 className="h-3.5 w-3.5 animate-spin text-[color:var(--c-8a8c91)]" />}
+                          </div>
+                        )}
+                        {subtasks.length === 0 && !isAdmin && <p className="px-2 py-2 text-[13px] text-[color:var(--c-8a8c91)]">No subtasks</p>}
                       </div>
                     )}
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Delete Task (admin only) */}
-              {isAdmin && (
-                <div className="pt-4 border-t border-[color:var(--c-333438)]">
-                  <button
-                    onClick={handleDeleteTask}
-                    className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Delete Task
-                  </button>
-                </div>
+            {/* ───────── Rail ───────── */}
+            <div className="flex w-11 shrink-0 flex-col items-center gap-1 border-l border-[color:var(--c-333438)] py-3">
+              <button onClick={() => setSide('comments')} aria-label="Comments" title="Comments" aria-pressed={side === 'comments'} className={`relative rounded-md p-2 transition ${side === 'comments' ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}>
+                <MessageSquare className="h-4 w-4" />
+                {(task.comments?.length ?? 0) > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 min-w-3.5 rounded-full bg-indigo-600 px-1 text-center text-[9px] font-semibold leading-3.5 text-white">{task.comments!.length}</span>
+                )}
+              </button>
+              <button onClick={() => setSide('time')} aria-label="Time tracked" title="Time tracked" aria-pressed={side === 'time'} className={`rounded-md p-2 transition ${side === 'time' ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}>
+                <Clock className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* ───────── Right: comments / time ───────── */}
+            <div className="flex w-[380px] shrink-0 flex-col border-l border-[color:var(--c-333438)] bg-[color:var(--c-232426)]">
+              {side === 'comments' ? (
+                <CommentsPanel
+                  comments={task.comments ?? []}
+                  createdLabel={createdLabel}
+                  me={me}
+                  users={users}
+                  canAssign={isAdmin && !task.assigneeId && !!me}
+                  onAssignMe={() => me && save({ assigneeId: me.id, assignee: { id: me.id, name: me.name, avatar: me.avatar ?? null } })}
+                  onAdd={addComment}
+                  onEdit={editComment}
+                  onDelete={askDeleteComment}
+                />
+              ) : (
+                <TimeLogPanel entries={entries} myId={me?.id} isAdmin={isAdmin} estimateMinutes={task.estimateMinutes} onAdd={addTime} onDelete={deleteTime} />
               )}
             </div>
-
-            {/* ───────── RIGHT PANEL (Comments) ───────── */}
-            <div className="w-[340px] shrink-0 flex flex-col bg-[color:var(--c-232426)] overflow-hidden">
-              {/* Comments header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--c-333438)]">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-[color:var(--c-white)]">Comments</span>
-                </div>
-                <div className="flex items-center gap-2 text-[color:var(--c-8a8c91)]">
-                  <span className="text-[11px]">Created {createdDate}</span>
-                  <Search className="h-3.5 w-3.5" />
-                  <Bell className="h-3.5 w-3.5" />
-                  <span className="text-[11px]">{task.comments?.length ?? 0}</span>
-                </div>
-              </div>
-
-              {/* Comments list */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {(!task.comments || task.comments.length === 0) ? (
-                  <div className="text-center py-8 space-y-3">
-                    <MessageSquare className="h-8 w-8 text-[color:var(--c-333438)] mx-auto" />
-                    <p className="text-sm font-semibold text-[color:var(--c-white)]">Send the first comment</p>
-                    <p className="text-xs text-[color:var(--c-8a8c91)]">Ask a question, share an update, or loop someone in.</p>
-                  </div>
-                ) : (
-                  task.comments.map(comment => {
-                    const isOwner = currentUser?.id === comment.userId;
-                    const isEditing = editingCommentId === comment.id;
-                    return (
-                      <div key={comment.id} className="group">
-                        <div className="flex items-start gap-2.5">
-                          {comment.user.avatar ? (
-                            <Image src={comment.user.avatar} alt="" width={28} height={28} className="rounded-full border border-[color:var(--c-333438)] shrink-0" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="h-7 w-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                              {comment.user.name?.[0]?.toUpperCase()}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-xs font-semibold text-[color:var(--c-white)]">{comment.user.name}</span>
-                              <span className="text-[10px] text-[#555]">
-                                {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              {isAdmin && isOwner && !isEditing && (
-                                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 ml-auto transition">
-                                  <button
-                                    onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.text); }}
-                                    className="p-0.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteComment(comment.id)}
-                                    className="p-0.5 text-[color:var(--c-8a8c91)] hover:text-red-400"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            {isEditing ? (
-                              <div className="space-y-1.5">
-                                <textarea
-                                  value={editCommentText}
-                                  onChange={(e) => setEditCommentText(e.target.value)}
-                                  className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded p-2 text-xs text-[color:var(--c-white)] outline-none resize-none"
-                                  rows={2}
-                                />
-                                <div className="flex gap-1.5">
-                                  <button onClick={() => handleEditComment(comment.id)} className="text-[10px] font-semibold text-white bg-indigo-600 px-2 py-0.5 rounded">Save</button>
-                                  <button onClick={() => setEditingCommentId(null)} className="text-[10px] font-semibold text-[color:var(--c-8a8c91)] px-2 py-0.5 rounded hover:text-[color:var(--c-white)]">Cancel</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-xs text-[#ccc] leading-relaxed whitespace-pre-wrap">{comment.text}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Comment input */}
-              <div className="border-t border-[color:var(--c-333438)] p-3">
-                {isAdmin ? (
-                  <>
-                    <div className="flex items-center gap-2 text-[11px] text-[color:var(--c-8a8c91)] mb-2 px-1">
-                      <button className="font-semibold text-[color:var(--c-white)] border-b border-indigo-500 pb-0.5">Comment</button>
-                    </div>
-                    <div className="relative">
-                      <textarea
-                        ref={commentInputRef}
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddComment();
-                          }
-                        }}
-                        placeholder="Write a comment..."
-                        rows={2}
-                        className="w-full bg-[color:var(--c-1e1f21)] border border-[color:var(--c-333438)] rounded-lg p-2.5 pr-10 text-xs text-[color:var(--c-white)] outline-none resize-none focus:border-indigo-500 placeholder:text-[#555] transition"
-                      />
-                      <button
-                        onClick={handleAddComment}
-                        disabled={postingComment || !newComment.trim()}
-                        className="absolute right-2 bottom-2.5 p-1 text-indigo-400 hover:text-indigo-300 disabled:text-[#555] transition"
-                      >
-                        <Send className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-[11px] text-[#555] text-center py-2">Read-only view — only admins can comment</p>
-                )}
-              </div>
-            </div>
           </div>
-        ) : null}
+        )}
 
-        {/* Confirmation Dialog */}
-        {confirmDialog && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center" onClick={() => setConfirmDialog(null)}>
-            <div className="absolute inset-0 bg-black/50 rounded-xl" />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="relative z-10 w-[380px] bg-[color:var(--c-232426)] border border-[color:var(--c-333438)] rounded-xl shadow-2xl p-5 space-y-4 animate-in fade-in-0 zoom-in-95 duration-150"
-            >
+        {/* Confirmation */}
+        {confirm && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center" onClick={() => setConfirm(null)}>
+            <div className="absolute inset-0 bg-black/50" />
+            <div onClick={(e) => e.stopPropagation()} className="relative z-10 w-[380px] space-y-4 rounded-xl border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] p-5 shadow-2xl">
               <div className="space-y-1.5">
-                <h3 className="text-sm font-bold text-[color:var(--c-white)]">{confirmDialog.title}</h3>
-                <p className="text-xs text-[color:var(--c-8a8c91)] leading-relaxed">{confirmDialog.message}</p>
+                <h3 className="text-sm font-bold text-[color:var(--c-white)]">{confirm.title}</h3>
+                <p className="text-xs leading-relaxed text-[color:var(--c-8a8c91)]">{confirm.message}</p>
               </div>
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  onClick={() => setConfirmDialog(null)}
-                  className="px-3 py-1.5 text-xs font-medium text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg hover:border-[#555] transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDialog.onConfirm}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition"
-                >
-                  Delete
-                </button>
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={() => setConfirm(null)} className="rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] px-3 py-1.5 text-xs font-medium text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">Cancel</button>
+                <button onClick={confirm.onConfirm} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500">Delete</button>
               </div>
             </div>
           </div>

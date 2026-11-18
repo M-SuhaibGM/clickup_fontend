@@ -5,6 +5,10 @@ export interface Task {
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
   priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
   dueDate: string | null;
+  startDate?: string | null;
+  /** estimated time, in minutes */
+  estimateMinutes?: number | null;
+  tags?: string[];
   listId: string;
   assigneeId: string | null;
   parentId: string | null;
@@ -14,6 +18,8 @@ export interface Task {
   comments?: Comment[]; //
   subtasks?: Task[]; // Add this
   attachments?: string[]; // ← ADD
+  timeEntries?: TimeEntry[];
+  list?: { id: string; name: string; projectId: string; project: { id: string; name: string; workspaceId: string } };
 
   _count?: {
     subtasks: number;
@@ -33,4 +39,16 @@ export interface Comment {
     name: string;
     avatar: string | null;
   };
+}
+
+export interface TimeEntry {
+  id: string;
+  taskId: string;
+  userId: string;
+  startedAt: string;
+  /** null while the timer is running */
+  endedAt: string | null;
+  manual: boolean;
+  note: string | null;
+  user: { id: string; name: string; avatar: string | null };
 }

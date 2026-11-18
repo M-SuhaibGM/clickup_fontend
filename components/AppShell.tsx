@@ -1,22 +1,27 @@
 'use client';
 
-import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
+import { useEffect, useState, Suspense, lazy, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSpaceStore } from '@/store/spaceStore';
 import { useChannelStore } from '@/store/channelStore';
+import { useTeamStore } from '@/store/teamStore';
 import Sidebar from './Sidebar';
 import SidebarDrawer from './SidebarDrawer';
 import Topbar from './Topbar';
 import AppRail from './AppRail';
 import AppShellSkeleton from './AppShellSkeleton';
 import { CommandPalette } from './command-palette';
-import AiChatDrawer from './AiChatDrawer';
-import CreateModal from './CreateModal';
+import { lazyOnOpen } from './LazyMount';
+import { useCreateModal } from '@/store/createModalStore';
 import ReminderAlerts from './ReminderAlerts';
 import DmProvider from './DmProvider';
+
+// Heavy, on-demand UI: downloaded only when first used.
+const AiChatDrawer = lazyOnOpen(() => import('./AiChatDrawer'), { slideIn: true });
+const CreateModal = lazy(() => import('./CreateModal'));
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,12 +29,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const fetchProjects = useProjectStore((s) => s.fetchProjects);
   const fetchSpaces = useSpaceStore((s) => s.fetchSpaces);
+  const fetchTeams = useTeamStore((s) => s.fetchTeams);
   const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
 
   const [ready, setReady] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const isCreateOpen = useCreateModal((s) => s.open);
 
   // Auto-close sidebar on mobile screens
   useEffect(() => {
@@ -58,10 +65,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       // Switching workspace: drop the previous workspace's spaces/projects/channels first
       useSpaceStore.getState().clear();
       useChannelStore.getState().reset();
+      useTeamStore.getState().clear();
       fetchSpaces(activeWorkspace.id);
+      fetchTeams(activeWorkspace.id);
       fetchProjects(activeWorkspace.id);
     }
-  }, [activeWorkspace, fetchProjects, fetchSpaces]);
+  }, [activeWorkspace, fetchProjects, fetchSpaces, fetchTeams]);
 
   // Drag logic
   const startDragging = useCallback((e: React.MouseEvent) => {
@@ -106,7 +115,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [isDragging, onMouseMove, stopDragging]);
 
   return (
-    <div className="flex flex-col h-screen bg-[color:var(--c-1e1f21)] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[color:var(--c-shell)] overflow-hidden">
       
       <Topbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} onAiChatClick={() => setIsAiChatOpen(true)} />
 
@@ -149,7 +158,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette />
-      <CreateModal />
+      {isCreateOpen && (
+        <Suspense fallback={null}>
+          <CreateModal />
+        </Suspense>
+      )}
       <ReminderAlerts />
       <DmProvider />
       <AiChatDrawer open={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />

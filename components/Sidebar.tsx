@@ -29,21 +29,39 @@ import {
   Network,
   Users,
   File,
-  Settings,
-  History,
   Bot,
   UserPlus,
   Megaphone,
+  UserCheck,
 } from 'lucide-react';
 
 // Import your Modals
-import NewProjectModal from './NewProjectModal';
-import NewSpaceModal from './NewSpaceModal';
+import { lazyOnOpen } from './LazyMount';
+import CreateMenu from './CreateMenu';
 import SpaceTree, { ChannelList } from './SpaceTree';
 import { BrainLogo, SectionLabel } from './SidebarSection';
-import InviteMemberModal from './InviteMemberModal';
 
+import TeamsSidebar from './sidebars/TeamsSidebar';
+import PlannerSidebar from './sidebars/PlannerSidebar';
+import SettingsSidebar from './sidebars/SettingsSidebar';
+
+const NewProjectModal = lazyOnOpen(() => import('./NewProjectModal'));
+const NewSpaceModal = lazyOnOpen(() => import('./NewSpaceModal'));
+const InviteMemberModal = lazyOnOpen(() => import('./InviteMemberModal'));
+
+/** Routes that show the "All settings" sidebar. */
+const SETTINGS_ROUTES = ['/settings', '/labs', '/upgrade', '/audit-logs'];
+
+/** The sidebar's content depends on the section: Teams, Planner and Settings/Labs have their own; everything else is Home. */
 export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
+  const pathname = usePathname();
+  if (pathname === '/teams' || pathname.startsWith('/teams/')) return <TeamsSidebar onCollapse={onCollapse} />;
+  if (pathname === '/planner' || pathname.startsWith('/planner/')) return <PlannerSidebar onCollapse={onCollapse} />;
+  if (SETTINGS_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))) return <SettingsSidebar onCollapse={onCollapse} />;
+  return <HomeSidebar onCollapse={onCollapse} />;
+}
+
+function HomeSidebar({ onCollapse }: { onCollapse?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -102,12 +120,11 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
                 <ChevronsLeft className="h-4 w-4" />
               </button>
             )}
-            <button
-              onClick={() => { setProjectSpaceId(null); setProjectModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1 bg-[color:var(--c-white)] hover:opacity-85 text-[color:var(--c-1e1f21)] rounded-md text-[13px] font-semibold transition"
-            >
-              <Plus className="h-3.5 w-3.5" /> Create
-            </button>
+            <CreateMenu
+              isAdmin={isAdmin}
+              onCreateSpace={() => setSpaceModalOpen(true)}
+              onCreateProject={() => { setProjectSpaceId(null); setProjectModalOpen(true); }}
+            />
           </div>
         </div>
 
@@ -131,35 +148,31 @@ export default function Sidebar({ onCollapse }: { onCollapse?: () => void }) {
           {/* Top Nav Items */}
           <NavItem icon={FileText} label="New" href="/ai" />
           <NavItem icon={Inbox} label="Inbox" href="/inbox" active={pathname === '/inbox'} badge={inboxCount} />
+          <NavItem icon={UserCheck} label="Assigned Comments" href="/assigned-comments" active={pathname === '/assigned-comments'} />
           <NavItem icon={Megaphone} label="Posts" href="/posts" active={pathname === '/posts'} />
 
           {/* My Tasks (Links to actual page) */}
           <NavItem icon={User} label="My Tasks" href="/my-tasks" active={pathname === '/my-tasks'} expandable />
+          {pathname === '/my-tasks' && (
+            <div className="ml-4 space-y-0.5 border-l border-[color:var(--c-333438)] pl-1.5">
+              <NavItem icon={UserCheck} label="Assigned to me" href="/my-tasks#card-assigned" small />
+              <NavItem icon={Calendar} label="Today & Overdue" href="/my-tasks#card-today" small />
+              <NavItem icon={CheckSquare} label="Personal List" href="/my-tasks#card-personal" small />
+            </div>
+          )}
           {/* --- ADMIN / WORKSPACE LINKS --- */}
           <div className="space-y-0.5">
             <NavItem
               icon={Users}
-              label="Members"
+              label="People"
               href="/members"
               active={pathname === '/members'}
-            />
-            <NavItem
-              icon={History}
-              label="History"
-              href="/history"
-              active={pathname === '/history'}
             />
             <NavItem
               icon={Bot}
               label="Automations"
               href="/workflows"
               active={pathname === '/workflows'}
-            />
-            <NavItem
-              icon={Settings}
-              label="Settings"
-              href="/settings"
-              active={pathname === '/settings'}
             />
           </div>
 

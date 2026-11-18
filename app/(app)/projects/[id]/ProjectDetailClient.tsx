@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { pushRecent } from '@/lib/recents';
 import { useListStore } from '@/store/listStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -13,24 +14,27 @@ import { toast } from 'sonner';
 import {
   List as ListIcon,
   LayoutGrid,
-  ListFilter,
   Plus,
   FolderKanban,
   X,
   Share2,
-  Settings,
   Trash2,
   Loader2,
   Sparkles,
   Hash,
   Calendar as CalendarIcon,
-   GanttChart,
+  GanttChart,
   Table as TableIcon,
+  Star,
+  ChevronDown,
+  Check,
+  Zap,
+  type LucideIcon,
 } from 'lucide-react';
-import AiDraftModal from '@/components/AiDraftModal';
+import { lazyOnOpen } from '@/components/LazyMount';
 import TaskList from '@/components/TaskList';
 import BoardView from '@/components/BoardView';
-import TaskDetailModal from '@/components/TaskDetailModal';
+
 import SpaceIcon from '@/components/SpaceIcon';
 import ChannelView from '@/components/ChannelView';
 import SocketProvider from '@/components/SocketProvider';
@@ -62,7 +66,21 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const AiDraftModal = lazyOnOpen(() => import('@/components/AiDraftModal'));
+const TaskDetailModal = lazyOnOpen(() => import('@/components/TaskDetailModal'));
+
 const EMPTY_LISTS: never[] = [];
+
+type Tab = 'list' | 'board' | 'channel' | 'calendar' | 'gantt' | 'table';
+const VIEW_TABS: { id: Tab; label: string; icon: LucideIcon; color: string }[] = [
+  { id: 'channel', label: 'Channel', icon: Hash, color: 'bg-indigo-500' },
+  { id: 'list', label: 'List', icon: ListIcon, color: 'bg-slate-500' },
+  { id: 'board', label: 'Board', icon: LayoutGrid, color: 'bg-blue-500' },
+  { id: 'calendar', label: 'Calendar', icon: CalendarIcon, color: 'bg-orange-500' },
+  { id: 'gantt', label: 'Gantt', icon: GanttChart, color: 'bg-red-500' },
+  { id: 'table', label: 'Table', icon: TableIcon, color: 'bg-emerald-500' },
+];
+const FAV_KEY = 'favorite-projects';
 
 /* ── Sortable Tab ─────────────────────────────────────────── */
 function SortableListTab({
@@ -141,7 +159,6 @@ export default function ProjectDetailClient() {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  type Tab = 'list' | 'board' | 'channel' | 'calendar' | 'gantt' | 'table';
   const [activeTab, setActiveTab] = useState<Tab>(searchParams.get('tab') === 'channel' ? 'channel' : 'list');
 
   // Role & Settings
@@ -154,6 +171,55 @@ export default function ProjectDetailClient() {
   const [projectDesc, setProjectDesc] = useState('');
   const [updatingProject, setUpdatingProject] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
+
+  // Favorite star (per browser) and project switcher
+  const [favorite, setFavorite] = useState(() => {
+    try {
+      return (JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]') as string[]).includes(id);
+    } catch {
+      return false; // storage unavailable (or server render — the star isn't shown until the project loads)
+    }
+  });
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+  const allProjects = useProjectStore((s) => s.projects);
+  const siblingProjects = useMemo(() => {
+    const spaceId = project?.spaceId ?? null;
+    const same = allProjects.filter((p) => p.spaceId === spaceId);
+    return same.length ? same : allProjects;
+  }, [allProjects, project?.spaceId]);
+
+  useEffect(() => {
+    if (!switcherOpen) return;
+    const onDown = (e: MouseEvent) => !switcherRef.current?.contains(e.target as Node) && setSwitcherOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSwitcherOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [switcherOpen]);
+
+  const toggleFavorite = () => {
+    const next = !favorite;
+    setFavorite(next);
+    try {
+      const set = new Set(JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]') as string[]);
+      if (next) set.add(id); else set.delete(id);
+      localStorage.setItem(FAV_KEY, JSON.stringify([...set]));
+    } catch { /* storage unavailable */ }
+    toast.success(next ? 'Added to favorites' : 'Removed from favorites');
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/projects/${id}`);
+      toast.success('Project link copied');
+    } catch {
+      toast.error('Could not copy the link');
+    }
+  };
 
   const lists = useListStore((s) => s.listsByProject[id] ?? EMPTY_LISTS);
   const fetchLists = useListStore((s) => s.fetchLists);
@@ -187,6 +253,7 @@ export default function ProjectDetailClient() {
       try {
         const { data } = await api.get<{ project: Project }>(`/projects/${id}`);
         setProject(data.project);
+        pushRecent({ kind: 'project', id: data.project.id, title: data.project.name, context: data.project.space?.name });
         setProjectName(data.project.name);
         setProjectDesc(data.project.description || '');
         await fetchLists(id);
@@ -313,7 +380,11 @@ export default function ProjectDetailClient() {
     }
   };
 
-  const [selectedTask, setSelectedTask] = useState<{ id: string; listId: string } | null>(null);
+  // A task link (/tasks/<id> → ?task=<id>&listId=<id>) opens that task straight away
+  const taskParam = searchParams.get('task');
+  const [selectedTask, setSelectedTask] = useState<{ id: string; listId: string } | null>(
+    taskParam ? { id: taskParam, listId: searchParams.get('listId') ?? '' } : null
+  );
 
   const handleTaskClick = (task: { id: string; listId?: string }) => {
     setSelectedTask({ id: task.id, listId: (task as any).listId ?? activeListId ?? '' });
@@ -330,84 +401,113 @@ export default function ProjectDetailClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--c-1e1f21)] text-[color:var(--c-e5e5e5)] p-3 sm:p-6 max-w-[100vw] overflow-x-hidden space-y-4">
+    <div className="min-h-full bg-[color:var(--c-1e1f21)] text-[color:var(--c-e5e5e5)] px-3 sm:px-5 pt-3 pb-6 max-w-[100vw] overflow-x-hidden space-y-3">
       <SocketProvider projectId={id} />
 
-      {/* Top Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[color:var(--c-333438)] pb-3">
-        <div className="flex items-center gap-2 text-sm text-[color:var(--c-8a8c91)]">
-          <span className="flex items-center gap-1.5">
+      {/* Header: breadcrumb + actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 text-[13px] text-[color:var(--c-8a8c91)] min-w-0">
+          <span className="flex items-center gap-1.5 shrink-0">
             {project.space && (
-              <SpaceIcon name={project.space.name} icon={project.space.icon} color={project.space.color} size={14} />
+              <SpaceIcon name={project.space.name} icon={project.space.icon} color={project.space.color} size={16} className="rounded-md" />
             )}
             {project.space?.name ?? 'No space'}
           </span>
           <span>/</span>
-          <div className="flex items-center gap-1.5 text-[color:var(--c-white)] font-semibold">
-            <FolderKanban className="h-4 w-4 text-indigo-400" />
-            <span>{project.name}</span>
+
+          <div className="relative min-w-0" ref={switcherRef}>
+            <button
+              onClick={() => setSwitcherOpen((v) => !v)}
+              aria-expanded={switcherOpen}
+              className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[color:var(--c-white)] font-semibold hover:bg-[color:var(--c-2a2b2e)] transition min-w-0"
+            >
+              <FolderKanban className="h-4 w-4 shrink-0 text-indigo-400" />
+              <span className="truncate">{project.name}</span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[color:var(--c-8a8c91)]" />
+            </button>
+            {switcherOpen && (
+              <div className="absolute left-0 top-full z-30 mt-1 w-64 max-h-72 overflow-y-auto rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] p-1 shadow-2xl custom-scrollbar">
+                <p className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#777]">Projects</p>
+                {siblingProjects.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setSwitcherOpen(false); if (p.id !== id) router.push(`/projects/${p.id}`); }}
+                    className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
+                  >
+                    <FolderKanban className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                    <span className="flex-1 truncate">{p.name}</span>
+                    {p.id === id && <Check className="h-3.5 w-3.5 text-indigo-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          <button
+            onClick={toggleFavorite}
+            aria-pressed={favorite}
+            title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            className="rounded-md p-1 hover:bg-[color:var(--c-2a2b2e)] transition"
+          >
+            <Star className={`h-4 w-4 ${favorite ? 'fill-yellow-400 text-yellow-400' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`} />
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => router.push('/workflows')}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)] transition"
+          >
+            <Zap className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)]" /> Automate
+          </button>
           {isAdmin && (
             <button
               onClick={() => setShowAiDraft(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-90 transition shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)] transition"
             >
-              <Sparkles className="h-3.5 w-3.5" /> AI Plan
+              <Sparkles className="h-3.5 w-3.5 text-violet-400" /> Ask AI
             </button>
           )}
-          <button className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] hover:bg-[color:var(--c-2a2b2e)] transition text-[color:var(--c-e5e5e5)]">
-            <Share2 className="h-3.5 w-3.5" /> Share
+          <button
+            onClick={copyLink}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)] transition"
+          >
+            <Share2 className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)]" /> Share
           </button>
           {isAdmin && (
-            <button onClick={() => setShowSettings(true)} className="p-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] rounded-md border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] transition">
-              <Settings className="h-4 w-4" />
+            <button
+              onClick={() => setShowSettings(true)}
+              className="rounded-md border border-[color:var(--c-444548)] px-3 py-1 text-[13px] font-medium text-[color:var(--c-white)] hover:bg-[color:var(--c-2a2b2e)] transition"
+            >
+              Manage
             </button>
           )}
         </div>
       </div>
 
-      {/* View Navigation Tabs (ClickUp Style) */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--c-333438)] pb-2 text-xs">
+      {/* View tabs */}
+      <div className="flex items-center gap-0.5 overflow-x-auto border-b border-[color:var(--c-333438)] text-[13px]">
+        {VIEW_TABS.map(({ id: tab, label, icon: Icon, color }) => {
+          const on = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => selectTab(tab)}
+              className={`flex shrink-0 items-center gap-1.5 px-2.5 py-2 -mb-px border-b-2 font-medium transition ${
+                on ? 'border-[color:var(--c-white)] text-[color:var(--c-white)]' : 'border-transparent text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'
+              }`}
+            >
+              <span className={`flex h-4 w-4 items-center justify-center rounded ${color}`}>
+                <Icon className="h-2.5 w-2.5 text-white" />
+              </span>
+              {label}
+            </button>
+          );
+        })}
         <button
-          onClick={() => selectTab('channel')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'channel' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
+          onClick={() => toast.info('Custom views are coming soon')}
+          className="flex shrink-0 items-center gap-1 px-2.5 py-2 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] font-medium transition"
         >
-          <Hash className="h-3.5 w-3.5 text-indigo-400" /> {project.channel?.name ?? project.name}
-        </button>
-        <button
-          onClick={() => selectTab('list')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'list' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
-        >
-          <ListIcon className="h-3.5 w-3.5 text-indigo-400" /> List
-        </button>
-        <button
-          onClick={() => selectTab('board')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'board' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
-        >
-          <LayoutGrid className="h-3.5 w-3.5 text-blue-400" /> Board
-        </button>
-        <button
-          onClick={() => selectTab('calendar')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'calendar' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
-        >
-          <CalendarIcon className="h-3.5 w-3.5 text-orange-400" /> Calendar
-        </button>
-        <button
-          onClick={() => selectTab('gantt')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'gantt' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
-        >
-          <GanttChart className="h-3.5 w-3.5 text-red-400" /> Gantt
-        </button>
-        <button
-          onClick={() => selectTab('table')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md font-medium transition ${activeTab === 'table' ? 'text-[color:var(--c-white)] border-b-2 border-indigo-500 bg-[color:var(--c-232426)]' : 'text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]'}`}
-        >
-          <TableIcon className="h-3.5 w-3.5 text-emerald-400" /> Table
-        </button>
-        <button className="flex items-center gap-1 px-3 py-1.5 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] font-medium transition">
           <Plus className="h-3.5 w-3.5" /> View
         </button>
       </div>
@@ -441,19 +541,67 @@ export default function ProjectDetailClient() {
 
       {/* Main Content Area based on Tab */}
       {activeTab === 'list' && activeListId ? (
-        <div className="mt-2">
-          <TaskList listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
-        </div>
+        <TaskList key={activeListId} listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
       ) : activeTab === 'board' && activeListId ? (
-        <div className="mt-2">
-          <BoardView listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
-        </div>
+        <BoardView key={activeListId} listId={activeListId} onTaskClick={handleTaskClick} isAdmin={isAdmin} />
       ) : activeTab === 'channel' ? (
         <ChannelView projectId={id} projectName={project.name} />
       ) : (
         <div className="p-12 text-center text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] rounded-lg border border-[color:var(--c-333438)]">
           <p className="text-sm font-semibold text-[color:var(--c-white)]">Coming Soon</p>
           <p className="text-xs mt-1">The {activeTab} view is currently under development.</p>
+        </div>
+      )}
+
+      {/* Manage project */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !updatingProject && setShowSettings(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Manage project"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-xl border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] p-5 shadow-2xl"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-bold text-[color:var(--c-white)]">Manage project</h2>
+              <button onClick={() => setShowSettings(false)} aria-label="Close" className="text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <label className="mb-1 block text-xs font-semibold text-[color:var(--c-8a8c91)]">Name</label>
+            <input
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-1e1f21)] px-3 py-2 text-sm text-[color:var(--c-white)] outline-none focus:border-indigo-500"
+            />
+            <label className="mb-1 block text-xs font-semibold text-[color:var(--c-8a8c91)]">Description</label>
+            <textarea
+              value={projectDesc}
+              onChange={(e) => setProjectDesc(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-1e1f21)] px-3 py-2 text-sm text-[color:var(--c-white)] outline-none focus:border-indigo-500"
+            />
+            <div className="mt-5 flex items-center justify-between">
+              <button
+                onClick={handleDeleteProject}
+                disabled={deletingProject || updatingProject}
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] text-red-400 hover:bg-red-500/10 disabled:opacity-50 transition"
+              >
+                {deletingProject ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Delete project
+              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowSettings(false)} className="rounded-md px-3 py-1.5 text-[13px] text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">Cancel</button>
+                <button
+                  onClick={handleUpdateProject}
+                  disabled={updatingProject || !projectName.trim()}
+                  className="rounded-md bg-[color:var(--c-white)] px-4 py-1.5 text-[13px] font-semibold text-[color:var(--c-1e1f21)] hover:opacity-85 disabled:opacity-50 transition"
+                >
+                  {updatingProject ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

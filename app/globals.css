@@ -234,23 +234,30 @@
   --c-121212: #f4f5f7;
   --c-0f0f10: #ffffff;
   --c-d4d4d4: #d4d4d4;
+  /* outermost app chrome: top bar, rail and the frame around the panels */
+  --c-shell: var(--c-1e1f21);
 }
 .dark {
-  --c-1e1f21: #1e1f21;
-  --c-232426: #232426;
-  --c-2a2b2e: #2a2b2e;
-  --c-333438: #333438;
-  --c-444548: #444548;
+  /* near-black, layered: shell (darkest) < page < panels < sidebar < hover */
+  --c-shell: #09090a;
+  --c-0f0f10: #0b0b0c;
+  --c-121212: #0e0e0f;
+  --c-1e1f21: #121213;
+  --c-232426: #171718;
+  --c-2a2b2e: #1e1e20;
+  --c-333438: #2a2a2d;
+  --c-444548: #39393c;
   --c-8a8c91: #8a8c91;
   --c-e5e5e5: #e5e5e5;
   --c-c4c5c8: #c4c5c8;
   --c-white: #ffffff;
-  --c-121212: #121212;
-  --c-0f0f10: #0f0f10;
   --c-d4d4d4: #444548;
 }
 
 /* Accent color themes (set via data-accent on <html>) */
+html.dark[data-accent] {
+  --c-shell: var(--c-1e1f21);
+}
 html.dark[data-accent="purple"] {
   --primary: #7b68ee;
   --primary-foreground: #ffffff;
@@ -367,4 +374,11 @@ html.dark[data-accent="mint"] {
   --c-2a2b2e: #1d4135;
   --c-333438: #245042;
   --c-444548: #2f6956;
+}
+
+/* "My Tasks" dashboard surfaces (follow the theme) */
+.mytasks-scope {
+  --mt-page: var(--c-121212);
+  --mt-card: var(--c-1e1f21);
+  --mt-border: var(--c-333438);
 }

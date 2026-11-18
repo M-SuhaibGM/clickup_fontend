@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Video, Mic, Bell } from 'lucide-react';
-import RecordVideoDropdown from '../RecordVideoDropdown';
-import RecordAudioDropdown from '../RecordAudioDropdown';
+import { Video, Mic } from 'lucide-react';
+import { lazyOnOpen } from '../LazyMount';
+
 import UserMenu from './UserMenu';
 import { useCreateModal } from '@/store/createModalStore';
+
+const RecordVideoDropdown = lazyOnOpen(() => import('../RecordVideoDropdown'));
+const RecordAudioDropdown = lazyOnOpen(() => import('../RecordAudioDropdown'));
 
 const iconBtn = (open: boolean) =>
   `p-1.5 rounded transition ${
@@ -13,6 +16,16 @@ const iconBtn = (open: boolean) =>
       ? 'bg-(--c-2a2b2e) text-(--c-white)'
       : 'text-(--c-8a8c91) hover:text-(--c-white) hover:bg-(--c-2a2b2e)'
   }`;
+
+function CheckPlusIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M20.5 13a8.5 8.5 0 1 1-8.5-9" />
+      <path d="m8.5 12 2.5 2.5 4.5-4.5" />
+      <path d="M19 2v6M16 5h6" />
+    </svg>
+  );
+}
 
 export default function TopbarActions() {
   const [recordDropdownOpen, setRecordDropdownOpen] = useState(false);
@@ -36,6 +49,16 @@ export default function TopbarActions() {
 
   return (
     <div className="flex items-center justify-end gap-1.5 flex-1">
+      <button
+        onClick={() => useCreateModal.getState().openModal('reminder')}
+        aria-label="Create reminder"
+        title="Create reminder"
+        className={iconBtn(modalOpen)}
+      >
+        <CheckPlusIcon className="h-4 w-4" />
+      </button>
+
+
       <div className="relative" ref={recordVideoRef}>
         <button onClick={() => setRecordDropdownOpen(!recordDropdownOpen)} className={iconBtn(recordDropdownOpen)}>
           <Video className="h-4 w-4" />
@@ -49,17 +72,6 @@ export default function TopbarActions() {
         </button>
         <RecordAudioDropdown open={recordAudioDropdownOpen} onClose={() => setRecordAudioDropdownOpen(false)} />
       </div>
-
-      <button
-        onClick={() => useCreateModal.getState().openModal('reminder')}
-        aria-label="Create reminder"
-        title="Create reminder"
-        className={iconBtn(modalOpen)}
-      >
-        <Bell className="h-4 w-4" />
-      </button>
-
-      <div className="h-4 w-px bg-(--c-333438) mx-1" />
 
       <UserMenu onRecordClip={() => setRecordDropdownOpen(true)} onTalkToText={() => setRecordAudioDropdownOpen(true)} />
     </div>

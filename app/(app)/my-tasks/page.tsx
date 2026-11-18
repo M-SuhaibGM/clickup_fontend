@@ -1,173 +1,235 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { api } from '@/lib/api';
-import { TaskListSkeleton } from '@/components/skeletons';
-import { Calendar, CheckSquare, ListTodo, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { DndContext, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
+import { RefreshCw, RotateCcw, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
+import { apiError } from '@/lib/apiError';
+import { useApi } from '@/lib/useApi';
+import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useAuthStore } from '@/store/authStore';
+import { useNow } from '@/lib/useNow';
+import RecentsCard from '@/components/mytasks/RecentsCard';
+import AgendaCard from '@/components/mytasks/AgendaCard';
+import { lazyOnOpen } from '@/components/LazyMount';
 
-interface Task {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  dueDate: string | null;
-  list: {
-    id: string;
-    name: string;
-    project: { id: string; name: string; color: string };
-  };
-  subtasks: { id: string; title: string; status: string }[];
-  _count?: { comments: number };
+import MyCard from '@/components/mytasks/MyCard';
+import ManageCardsDialog from '@/components/mytasks/ManageCardsDialog';
+import PersonalListCard from '@/components/mytasks/PersonalListCard';
+import AssignedCommentsCard from '@/components/mytasks/AssignedCommentsCard';
+import TimeTrackedCard from '@/components/mytasks/TimeTrackedCard';
+import { AssignedCard, TodayOverdueCard, bucketTasks } from '@/components/mytasks/TaskCards';
+import { CARDS, type CardId, type MyTask } from '@/components/mytasks/types';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const TaskDetailModal = lazyOnOpen(() => import('@/components/TaskDetailModal'));
+
+// ── Layout (card order / hidden / wide), kept in this browser ──
+const LAYOUT_KEY = 'my-tasks-layout-v2';
+const LAYOUT_EVENT = 'my-tasks-layout-change';
+const IDS = CARDS.map((c) => c.id);
+
+interface Layout { order: CardId[]; hidden: CardId[]; wide: CardId[] }
+const DEFAULT_LAYOUT: Layout = { order: IDS, hidden: [], wide: [] };
+
+function parseLayout(raw: string): Layout {
+  try {
+    const v = JSON.parse(raw) as Partial<Layout>;
+    const known = (list: unknown): CardId[] => (Array.isArray(list) ? list.filter((x): x is CardId => IDS.includes(x as CardId)) : []);
+    const order = known(v.order);
+    return { order: [...order, ...IDS.filter((id) => !order.includes(id))], hidden: known(v.hidden), wide: known(v.wide) };
+  } catch {
+    return DEFAULT_LAYOUT;
+  }
 }
 
+const layoutStore = {
+  subscribe(cb: () => void) {
+    window.addEventListener(LAYOUT_EVENT, cb);
+    window.addEventListener('storage', cb);
+    return () => {
+      window.removeEventListener(LAYOUT_EVENT, cb);
+      window.removeEventListener('storage', cb);
+    };
+  },
+  snapshot() {
+    try { return localStorage.getItem(LAYOUT_KEY) ?? ''; } catch { return ''; }
+  },
+};
+const writeLayout = (next: Layout) => {
+  try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
+  window.dispatchEvent(new Event(LAYOUT_EVENT));
+};
+
 export default function MyTasksPage() {
-  const router = useRouter(); // ← Add
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
+  const workspaceId = activeWorkspace?.id ?? null;
+  const isAdmin = activeWorkspace?.role === 'ADMIN';
+  const userName = useAuthStore((s) => s.user?.name);
+  const now = useNow(60_000);
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = userName?.trim().split(/\s+/)[0];
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  // useSyncExternalStore: the server (and first client render) use the default layout, so there's no hydration mismatch
+  const rawLayout = useSyncExternalStore(layoutStore.subscribe, layoutStore.snapshot, () => '');
+  const layout = useMemo(() => (rawLayout ? parseLayout(rawLayout) : DEFAULT_LAYOUT), [rawLayout]);
 
-  const fetchMyTasks = async () => {
-    if (!activeWorkspace) return;
-    setLoading(true);
-    try {
-      const { data } = await api.get<{ tasks: Task[] }>(`/workspaces/${activeWorkspace.id}/my-tasks`);
-      setTasks(data.tasks);
-    } catch (err) {
-      console.error('Failed to fetch my tasks', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [reloadKey, setReloadKey] = useState(0);
+  const refresh = useCallback(() => setReloadKey((k) => k + 1), []);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [gearOpen, setGearOpen] = useState(false);
+  const [selected, setSelected] = useState<{ id: string; listId: string } | null>(null);
+  const gearRef = useRef<HTMLDivElement>(null);
+
+  const { data, loading, error, mutate } = useApi<{ tasks: MyTask[] }>(workspaceId ? `/workspaces/${workspaceId}/my-tasks` : null, undefined, reloadKey);
+  const tasks = useMemo(() => data?.tasks ?? [], [data]);
 
   useEffect(() => {
-    fetchMyTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeWorkspace]);
+    if (!gearOpen) return;
+    const onDown = (e: MouseEvent) => !gearRef.current?.contains(e.target as Node) && setGearOpen(false);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [gearOpen]);
 
-  const handleProgressChange = async (taskId: string, newStatus: string) => {
-    // Optimistic Update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
-    );
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } })
+  );
 
+  const visible = layout.order.filter((id) => !layout.hidden.includes(id));
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const from = visible.indexOf(active.id as CardId);
+    const to = visible.indexOf(over.id as CardId);
+    if (from === -1 || to === -1) return;
+    // reorder the visible cards, keeping hidden ones where they were
+    const moved = arrayMove(visible, from, to);
+    let i = 0;
+    writeLayout({ ...layout, order: layout.order.map((id) => (layout.hidden.includes(id) ? id : moved[i++])) });
+  };
+  const toggleIn = (list: CardId[], id: CardId) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
+  // ── Task actions ──
+  const openTask = (t: MyTask) => setSelected({ id: t.id, listId: t.list.id });
+  const toggleDone = async (t: MyTask) => {
+    const status = t.status === 'DONE' ? 'TODO' : 'DONE';
+    mutate((d) => ({ tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, status } : x)) }));
     try {
-      await api.patch(`/tasks/${taskId}`, { status: newStatus });
-      toast.success('Task updated');
-    } catch {
-      toast.error('Failed to update task');
-      fetchMyTasks();
+      await api.patch(`/tasks/${t.id}`, { status });
+    } catch (err) {
+      mutate((d) => ({ tasks: d.tasks.map((x) => (x.id === t.id ? t : x)) }));
+      toast.error(apiError(err, 'Failed to update the task'));
     }
   };
+  const closeModal = useCallback(() => {
+    setSelected(null);
+    refresh(); // the task may have changed in the modal
+  }, [refresh]);
 
-  if (loading) {
-    return <TaskListSkeleton />;
-  }
+  const buckets = useMemo(() => bucketTasks(tasks), [tasks]);
+  const counts: Partial<Record<CardId, number>> = {
+    today: buckets.overdue.length + buckets.today.length,
+    assigned: buckets.upcoming.length + buckets.noDate.length,
+  };
+
+  const renderCard = (id: CardId) => {
+    if (!workspaceId) return null;
+    const def = CARDS.find((c) => c.id === id)!;
+    const wide = layout.wide.includes(id);
+    const body =
+      id === 'recents' ? <RecentsCard onOpenTask={setSelected} />
+      : id === 'agenda' ? <AgendaCard tasks={tasks} now={now} onOpen={openTask} onToggle={toggleDone} />
+      : id === 'today' ? <TodayOverdueCard tasks={tasks} onOpen={openTask} onToggle={toggleDone} />
+      : id === 'assigned' ? <AssignedCard tasks={tasks} onOpen={openTask} onToggle={toggleDone} />
+      : id === 'personal' ? <PersonalListCard workspaceId={workspaceId} reloadKey={reloadKey} />
+      : id === 'comments' ? <AssignedCommentsCard workspaceId={workspaceId} reloadKey={reloadKey} onOpenTask={setSelected} />
+      : <TimeTrackedCard workspaceId={workspaceId} reloadKey={reloadKey} />;
+    return (
+      <MyCard
+        key={id}
+        id={id}
+        title={def.title}
+        count={counts[id]}
+        wide={wide}
+        onToggleWide={() => writeLayout({ ...layout, wide: toggleIn(layout.wide, id) })}
+        onHide={() => writeLayout({ ...layout, hidden: [...layout.hidden, id] })}
+        onRefresh={refresh}
+      >
+        {body}
+      </MyCard>
+    );
+  };
+
+  const loadingFirst = !workspaceId || (loading && !data);
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-          <CheckSquare className="h-5 sm:h-6 w-5 sm:w-6 text-indigo-500" /> My Tasks
-        </h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          All tasks assigned to you in <span className="font-semibold text-foreground">{activeWorkspace?.name}</span>
-        </p>
+    <div className="mytasks-scope flex h-full min-h-0 flex-col bg-[color:var(--mt-page)]">
+      <div className="flex shrink-0 items-center justify-between border-b border-[color:var(--mt-border)] px-5 py-3">
+        <h1 className="text-[15px] font-semibold text-[color:var(--c-white)]">My Tasks</h1>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setManageOpen(true)} className="rounded-md bg-[color:var(--c-white)] px-3 py-1.5 text-[13px] font-semibold text-[color:var(--c-1e1f21)] transition hover:opacity-85">
+            Manage cards
+          </button>
+          <div className="relative" ref={gearRef}>
+            <button onClick={() => setGearOpen((v) => !v)} aria-label="Page options" aria-expanded={gearOpen} className="rounded-md p-1.5 text-[color:var(--c-8a8c91)] transition hover:bg-[color:var(--c-2a2b2e)] hover:text-[color:var(--c-white)]">
+              <Settings className="h-4 w-4" />
+            </button>
+            {gearOpen && (
+              <div className="absolute right-0 top-full z-30 mt-1 w-48 rounded-lg border border-[color:var(--c-333438)] bg-[color:var(--c-2a2b2e)] p-1 shadow-2xl">
+                <button onClick={() => { setGearOpen(false); refresh(); }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)]">
+                  <RefreshCw className="h-3.5 w-3.5" /> Refresh everything
+                </button>
+                <button onClick={() => { setGearOpen(false); writeLayout(DEFAULT_LAYOUT); }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)]">
+                  <RotateCcw className="h-3.5 w-3.5" /> Reset layout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {tasks.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-border bg-card/50 p-12 text-center">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mb-4">
-            <CheckCircle2 className="h-7 w-7 text-indigo-500" />
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
+        {error && !data && (
+          <p className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-300">
+            Couldn&apos;t load your tasks. <button onClick={refresh} className="underline">Try again</button>
+          </p>
+        )}
+
+        {loadingFirst ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[420px] rounded-2xl" />)}
           </div>
-          <h2 className="text-lg font-semibold text-foreground mb-1">You're all caught up!</h2>
-          <p className="text-sm text-muted-foreground">You have no tasks assigned to you in this workspace.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {tasks.map((task) => {
-            const isDone = task.status === 'DONE';
-            const subtaskProgress = task.subtasks?.filter(st => st.status === 'DONE').length ?? 0;
-            const totalSubtasks = task.subtasks?.length ?? 0;
-            const due = task.dueDate ? new Date(task.dueDate) : null;
-            const overdue = due && due < new Date() && !isDone;
-
-            return (
-              <div
-                key={task.id}
-                onClick={() => router.push(`/tasks/${task.id}`)} // ← Redirect to Task Page
-                className="group flex flex-col bg-card rounded-xl border border-border shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all cursor-pointer overflow-hidden"
-              >
-                {/* Card Header - Project Name */}
-                <div className="px-3 sm:px-4 py-2 border-b border-border/50 bg-muted/30 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: task.list.project.color }} />
-                  <span className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground truncate uppercase tracking-wider">
-                    {task.list.project.name} / {task.list.name}
-                  </span>
-                </div>
-
-                <div className="p-3 sm:p-4 flex-1 flex flex-col gap-2 sm:gap-3">
-                  {/* Title & Priority */}
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className={`font-semibold text-xs sm:text-sm line-clamp-2 ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                      {task.title}
-                    </h3>
-                    {task.priority && (
-                      <span className={`shrink-0 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap ${
-                        task.priority === 'URGENT' ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' :
-                        task.priority === 'HIGH' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' :
-                        'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                      }`}>
-                        {task.priority}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Details */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-muted-foreground mt-auto pt-2">
-                    {totalSubtasks > 0 && (
-                      <div className="flex items-center gap-1">
-                        <ListTodo className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
-                        <span>{subtaskProgress}/{totalSubtasks}</span>
-                      </div>
-                    )}
-                    {task._count?.comments && (
-                      <div className="flex items-center gap-1">
-                        <MessageSquare className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
-                        <span>{task._count.comments}</span>
-                      </div>
-                    )}
-                    {due && (
-                      <div className={`flex items-center gap-1 whitespace-nowrap ${overdue ? 'text-red-500 font-semibold' : ''}`}>
-                        <Calendar className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
-                        <span>{due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer - Status Dropdown */}
-                <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-border/50 bg-muted/10">
-                  <select
-                    value={task.status}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => handleProgressChange(task.id, e.target.value)}
-                    className="w-full text-[11px] sm:text-xs font-semibold bg-background border border-input rounded-md px-2 py-1.5 focus:border-indigo-500 outline-none cursor-pointer"
-                  >
-                    <option value="TODO">To Do</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="DONE">Done</option>
-                  </select>
-                </div>
+        ) : visible.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-[15px] font-semibold text-[color:var(--c-white)]">All cards are hidden</p>
+            <p className="mt-1 text-[13px] text-[color:var(--c-8a8c91)]">Pick what you want to see on this page.</p>
+            <button onClick={() => setManageOpen(true)} className="mt-4 rounded-md bg-[color:var(--c-white)] px-3 py-1.5 text-[13px] font-semibold text-[color:var(--c-1e1f21)] hover:opacity-85">Manage cards</button>
+          </div>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={visible} strategy={rectSortingStrategy}>
+              <div className="mx-auto max-w-[1400px]">
+                <h2 className="mb-4 px-1 text-[22px] font-bold text-[color:var(--c-white)]">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{visible.map(renderCard)}</div>
               </div>
-            );
-          })}
-        </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+
+      {manageOpen && (
+        <ManageCardsDialog
+          hidden={layout.hidden}
+          onToggle={(id) => writeLayout({ ...layout, hidden: toggleIn(layout.hidden, id) })}
+          onReset={() => writeLayout(DEFAULT_LAYOUT)}
+          onClose={() => setManageOpen(false)}
+        />
       )}
+
+      <TaskDetailModal taskId={selected?.id ?? ''} listId={selected?.listId ?? ''} open={!!selected} onClose={closeModal} isAdmin={isAdmin} />
     </div>
   );
 }

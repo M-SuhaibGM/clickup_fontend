@@ -86,7 +86,7 @@ export function MenuItem({
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-[13.5px] transition-colors ${
         active
-          ? 'bg-[color:var(--c-2a2b2e)] text-[color:var(--c-white)]'
+          ? 'bg-(--c-2a2b2e) text-(--c-white)'
           : 'text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)]'
       }`}
     >

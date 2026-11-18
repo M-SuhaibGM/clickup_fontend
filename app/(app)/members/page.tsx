@@ -1,13 +1,14 @@
 // frontend/app/(app)/members/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
-import InviteMemberModal from '@/components/InviteMemberModal';
+import { lazyOnOpen } from '@/components/LazyMount';
+
 import { MembersSkeleton } from '@/components/skeletons';
-import { Users, Plus, Mail, Shield, User as UserIcon, Search, Trash2, ChevronDown, Briefcase } from 'lucide-react';
+import { Plus, Search, Trash2, ChevronDown, Upload, MoreHorizontal, Check } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import {
@@ -16,6 +17,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+const InviteMemberModal = lazyOnOpen(() => import('@/components/InviteMemberModal'));
 
 const JOB_TITLES = [
   'Fullstack Developer', 'Frontend Developer', 'Backend Developer',
@@ -27,31 +30,59 @@ const JOB_TITLES = [
   'Growth Hacker', 'Intern',
 ];
 
+type RoleFilter = 'ALL' | 'OWNER' | 'ADMIN' | 'MEMBER';
+
 interface Member {
   id: string;
   role: string;
   jobTitle: string | null;
-  user: { id: string; name: string; email: string; avatar: string | null; };
+  createdAt?: string;
+  user: { id: string; name: string; email: string; avatar: string | null };
+}
+
+const GRID = 'grid grid-cols-[minmax(240px,2fr)_minmax(220px,2fr)_110px_minmax(170px,1.5fr)_110px_48px] items-center gap-4 px-3';
+
+const roleLabel = (role: string, isOwner: boolean) =>
+  isOwner ? 'Owner' : role === 'ADMIN' ? 'Admin' : 'Member';
+
+function Avatar({ name, src }: { name: string; src: string | null }) {
+  return src ? (
+    <Image
+      src={src}
+      alt={name}
+      width={28}
+      height={28}
+      className="h-7 w-7 rounded-full object-cover flex-shrink-0"
+      referrerPolicy="no-referrer"
+    />
+  ) : (
+    <div className="h-7 w-7 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+      {name[0]?.toUpperCase()}
+    </div>
+  );
 }
 
 export default function MembersPage() {
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
   const currentUser = useAuthStore((s) => s.user);
-  
+
   const [members, setMembers] = useState<Member[]>([]);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  
-  // Search State
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'MEMBER'>('ALL');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
 
   const fetchMembers = async () => {
     if (!activeWorkspace) return;
     setLoading(true);
     try {
-      const { data } = await api.get<{ workspace: { members: Member[] } }>(`/workspaces/${activeWorkspace.id}`);
+      const { data } = await api.get<{ workspace: { ownerId?: string; members: Member[] } }>(
+        `/workspaces/${activeWorkspace.id}`,
+      );
       setMembers(data.workspace.members);
+      setOwnerId(data.workspace.ownerId ?? null);
     } catch (err) {
       console.error('Failed to fetch members', err);
     } finally {
@@ -64,7 +95,7 @@ export default function MembersPage() {
   const handleUpdate = async (memberId: string, patch: { role?: string; jobTitle?: string }) => {
     try {
       await api.patch(`/workspaces/${activeWorkspace!.id}/members/${memberId}`, patch);
-      setMembers((prev) => prev.map((m) => m.id === memberId ? { ...m, ...patch } : m));
+      setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, ...patch } : m)));
       toast.success('Member updated');
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? 'Failed to update member');
@@ -82,281 +113,260 @@ export default function MembersPage() {
     }
   };
 
-  // Filter logic
-  const filteredMembers = members.filter((m) => {
-    const matchesSearch = 
-      m.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (m.jobTitle ?? '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'ALL' || m.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  const isOwnerMember = (m: Member) => !!ownerId && m.user.id === ownerId;
 
-  // Check if current user is an Admin
+  const filteredMembers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return members.filter((m) => {
+      const matchesSearch =
+        !q ||
+        m.user.name.toLowerCase().includes(q) ||
+        m.user.email.toLowerCase().includes(q) ||
+        (m.jobTitle ?? '').toLowerCase().includes(q);
+      const matchesRole =
+        roleFilter === 'ALL' ||
+        (roleFilter === 'OWNER' ? isOwnerMember(m) : !isOwnerMember(m) && m.role === roleFilter);
+      return matchesSearch && matchesRole;
+    });
+  }, [members, searchQuery, roleFilter, ownerId]);
+
   const isAdmin = members.find((m) => m.user.id === currentUser?.id)?.role === 'ADMIN';
+
+  const handleExport = () => {
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = [
+      ['Name', 'Email', 'Role', 'Job title', 'Invited'],
+      ...filteredMembers.map((m) => [
+        m.user.name,
+        m.user.email,
+        roleLabel(m.role, isOwnerMember(m)),
+        m.jobTitle ?? '',
+        m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '',
+      ]),
+    ];
+    const csv = rows.map((r) => r.map(esc).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeWorkspace?.name ?? 'workspace'}-people.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return <MembersSkeleton />;
   }
 
-  return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-5 sm:h-6 w-5 sm:w-6 text-indigo-500" /> Members
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Manage who has access to <span className="font-semibold text-foreground">{activeWorkspace?.name}</span>
-          </p>
-        </div>
+  const filterLabels: Record<RoleFilter, string> = {
+    ALL: 'All Users',
+    OWNER: 'Owners',
+    ADMIN: 'Admins',
+    MEMBER: 'Members',
+  };
+  const filterCount = filteredMembers.length;
 
+  return (
+    <div className="px-4 sm:px-8 pt-8 pb-10 w-full">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex items-baseline gap-4">
+          <h1 className="text-2xl font-bold text-foreground">Manage people</h1>
+        </div>
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 rounded-md bg-muted/60 hover:bg-muted px-3 py-2 text-sm font-medium text-foreground transition"
+        >
+          <Upload className="h-3.5 w-3.5" /> Export
+        </button>
+      </div>
+
+      {/* Search / invite bar */}
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-2 focus-within:border-muted-foreground/60 transition">
+        <Search className="h-4 w-4 text-foreground flex-shrink-0" />
+        <input
+          type="text"
+          placeholder="Search or invite by email"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+        />
         {isAdmin && (
           <button
             onClick={() => setInviteModalOpen(true)}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 sm:py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3.5 py-2 text-sm font-semibold text-background hover:opacity-90 transition flex-shrink-0"
           >
-            <Plus className="h-4 w-4" /> Add Member
+            <Plus className="h-3.5 w-3.5" /> Invite people
           </button>
         )}
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by name or job title..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-3 py-2.5 sm:py-2 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
-        </div>
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as any)}
-          className="rounded-lg border border-input bg-background px-3 py-2.5 sm:py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full sm:w-[160px]"
-        >
-          <option value="ALL">All Roles</option>
-          <option value="ADMIN">Admins</option>
-          <option value="MEMBER">Members</option>
-        </select>
+      {/* Filter chip */}
+      <div className="mt-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 hover:bg-muted px-3 py-1 text-xs font-semibold text-foreground outline-none transition">
+            {filterLabels[roleFilter]} ({filterCount})
+            <ChevronDown className="h-3 w-3" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            {(Object.keys(filterLabels) as RoleFilter[]).map((key) => (
+              <DropdownMenuItem
+                key={key}
+                onClick={() => setRoleFilter(key)}
+                className="text-xs cursor-pointer justify-between"
+              >
+                {filterLabels[key]}
+                {roleFilter === key && <Check className="h-3 w-3" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Content Container */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        {/* Desktop Table Header */}
-        <div className="hidden sm:grid grid-cols-12 gap-4 border-b border-border bg-muted/50 px-6 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-          <div className="col-span-5">User</div>
-          <div className="col-span-3">Job Title</div>
-          <div className="col-span-2">Role</div>
-          <div className="col-span-2 text-right">Actions</div>
-        </div>
-
-        {filteredMembers.length === 0 ? (
-          <div className="p-8 sm:p-12 text-center text-muted-foreground text-sm">
-            No members found matching your filters.
+      {/* Table */}
+      <div className="mt-4 overflow-x-auto">
+        <div className="min-w-[900px]">
+          {/* Column headers */}
+          <div className={`${GRID} border-y border-border py-3 text-xs text-muted-foreground`}>
+            <div>Name</div>
+            <div>Email</div>
+            <div>Role</div>
+            <div>Job title</div>
+            <div>Invited</div>
+            <div />
           </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {filteredMembers.map((member) => {
+
+          {/* Invite row */}
+          {isAdmin && (
+            <button
+              onClick={() => setInviteModalOpen(true)}
+              className={`${GRID} w-full text-left py-3 border-b border-border hover:bg-accent/30 transition`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="h-7 w-7 rounded-full bg-muted/70 flex items-center justify-center flex-shrink-0">
+                  <Plus className="h-3.5 w-3.5 text-foreground" />
+                </span>
+                <span className="text-sm font-semibold text-foreground">Invite people</span>
+              </div>
+            </button>
+          )}
+
+          {filteredMembers.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No people found matching your filters.
+            </div>
+          ) : (
+            filteredMembers.map((member) => {
               const isMe = member.user.id === currentUser?.id;
+              const isOwner = isOwnerMember(member);
+              const canEdit = isAdmin && !isOwner;
+              const canRemove = isAdmin && !isMe && !isOwner;
 
               return (
-                <div key={member.id} className="p-4 sm:px-6 sm:py-4 hover:bg-accent/30 transition">
-                  {/* MOBILE VIEW (Card Layout) */}
-                  <div className="flex sm:hidden flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {member.user.avatar ? (
-                          <Image src={member.user.avatar} alt={member.user.name} width={40} height={40} className="h-10 w-10 rounded-full border border-border object-cover flex-shrink-0" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold flex-shrink-0">
-                            {member.user.name[0]?.toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-semibold text-foreground truncate text-sm">
-                            {member.user.name} {isMe && <span className="text-muted-foreground font-normal">(You)</span>}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <Mail className="h-3 w-3 flex-shrink-0" /> {member.user.email}
-                          </p>
-                        </div>
-                      </div>
-
-                      {isAdmin && !isMe ? (
-                        <button
-                          onClick={() => handleRemove(member.id, member.user.name)}
-                          className="text-muted-foreground hover:text-red-600 p-2 rounded-lg bg-muted/40"
-                          title="Remove member"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Active
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs">
-                      {/* Mobile Job Title Dropdown with Proper Alignment */}
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Briefcase className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                        {isAdmin ? (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center gap-1 text-foreground hover:bg-muted px-2 py-1 rounded border border-border truncate max-w-[140px]">
-                              <span className="truncate">{member.jobTitle || 'Select title...'}</span>
-                              <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent 
-                              side="bottom" 
-                              align="start" 
-                              className="w-48 max-h-60 overflow-y-auto z-50"
-                            >
-                              {JOB_TITLES.map((title) => (
-                                <DropdownMenuItem 
-                                  key={title} 
-                                  onClick={() => handleUpdate(member.id, { jobTitle: title })} 
-                                  className="text-xs cursor-pointer"
-                                >
-                                  {title}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        ) : (
-                          <span className="text-foreground truncate">{member.jobTitle || '—'}</span>
-                        )}
-                      </div>
-
-                      {/* Role Selector (Mobile) */}
-                      <div>
-                        {isAdmin && !isMe ? (
-                          <select
-                            value={member.role}
-                            onChange={(e) => handleUpdate(member.id, { role: e.target.value })}
-                            className={`text-xs font-semibold rounded-full px-2.5 py-1 border-none outline-none cursor-pointer ${
-                              member.role === 'ADMIN' 
-                                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' 
-                                : 'bg-muted text-muted-foreground'
-                            }`}
-                          >
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="MEMBER">MEMBER</option>
-                          </select>
-                        ) : (
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                            member.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {member.role === 'ADMIN' ? <Shield className="h-3 w-3" /> : <UserIcon className="h-3 w-3" />} {member.role}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                <div
+                  key={member.id}
+                  className={`${GRID} py-3 border-b border-border/60 hover:bg-accent/30 transition`}
+                >
+                  {/* Name */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar name={member.user.name} src={member.user.avatar} />
+                    <span className="text-sm font-semibold text-foreground truncate">
+                      {member.user.name}
+                      {isMe && !isOwner && <span className="text-muted-foreground font-normal"> (You)</span>}
+                    </span>
+                    {isOwner && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-foreground flex-shrink-0">
+                        Owner
+                      </span>
+                    )}
                   </div>
 
-                  {/* DESKTOP VIEW (Grid Row Layout) */}
-                  <div className="hidden sm:grid grid-cols-12 gap-4 items-center">
-                    {/* User */}
-                    <div className="col-span-5 flex items-center gap-3 min-w-0">
-                      {member.user.avatar ? (
-                        <Image src={member.user.avatar} alt={member.user.name} width={40} height={40} className="h-10 w-10 rounded-full border border-border object-cover flex-shrink-0" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="h-10 w-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold flex-shrink-0">
-                          {member.user.name[0]?.toUpperCase()}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">
-                          {member.user.name} {isMe && <span className="text-muted-foreground font-normal">(You)</span>}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1"><Mail className="h-3 w-3" /> {member.user.email}</p>
-                      </div>
-                    </div>
+                  {/* Email */}
+                  <div className="text-sm text-foreground truncate">{member.user.email}</div>
 
-                    {/* Job Title Dropdown (Desktop) */}
-                    <div className="col-span-3 min-w-0">
-                      {isAdmin ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-foreground hover:bg-muted px-2 py-1 rounded border border-transparent hover:border-border transition max-w-full truncate">
-                            <span className="truncate">{member.jobTitle || 'Select title...'}</span>
-                            <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent 
-                            side="bottom" 
-                            align="start" 
-                            className="w-48 max-h-60 overflow-y-auto z-50"
+                  {/* Role */}
+                  <div className="text-xs text-foreground">
+                    {canEdit && !isMe ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="inline-flex items-center gap-1 -ml-1.5 px-1.5 py-1 rounded hover:bg-muted outline-none">
+                          {roleLabel(member.role, false)}
+                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-32">
+                          {(['ADMIN', 'MEMBER'] as const).map((r) => (
+                            <DropdownMenuItem
+                              key={r}
+                              onClick={() => handleUpdate(member.id, { role: r })}
+                              className="text-xs cursor-pointer justify-between"
+                            >
+                              {roleLabel(r, false)}
+                              {member.role === r && <Check className="h-3 w-3" />}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      roleLabel(member.role, isOwner)
+                    )}
+                  </div>
+
+                  {/* Job title */}
+                  <div className="min-w-0 text-xs text-foreground">
+                    {isAdmin ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="inline-flex items-center gap-1 -ml-1.5 px-1.5 py-1 rounded hover:bg-muted outline-none max-w-full">
+                          <span className="truncate">{member.jobTitle || 'Select title...'}</span>
+                          <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48 max-h-60 overflow-y-auto z-50">
+                          {JOB_TITLES.map((title) => (
+                            <DropdownMenuItem
+                              key={title}
+                              onClick={() => handleUpdate(member.id, { jobTitle: title })}
+                              className="text-xs cursor-pointer"
+                            >
+                              {title}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <span className="truncate block">{member.jobTitle || '—'}</span>
+                    )}
+                  </div>
+
+                  {/* Invited (joined date) */}
+                  <div className="text-xs text-foreground">
+                    {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : '—'}
+                  </div>
+
+                  {/* Row actions */}
+                  <div className="flex justify-end">
+                    {canRemove && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted outline-none">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => handleRemove(member.id, member.user.name)}
+                            className="text-xs cursor-pointer text-red-500 focus:text-red-500"
                           >
-                            {JOB_TITLES.map((title) => (
-                              <DropdownMenuItem 
-                                key={title} 
-                                onClick={() => handleUpdate(member.id, { jobTitle: title })} 
-                                className="text-xs cursor-pointer"
-                              >
-                                {title}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <span className="text-xs text-foreground truncate block">{member.jobTitle || '—'}</span>
-                      )}
-                    </div>
-
-                    {/* Role Toggle */}
-                    <div className="col-span-2">
-                      {isAdmin && !isMe ? (
-                        <select
-                          value={member.role}
-                          onChange={(e) => handleUpdate(member.id, { role: e.target.value })}
-                          className={`text-xs font-semibold rounded-full px-2.5 py-1 border-none outline-none cursor-pointer ${
-                            member.role === 'ADMIN' 
-                              ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' 
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          <option value="ADMIN">ADMIN</option>
-                          <option value="MEMBER">MEMBER</option>
-                        </select>
-                      ) : (
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                          member.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {member.role === 'ADMIN' ? <Shield className="h-3 w-3" /> : <UserIcon className="h-3 w-3" />} {member.role}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="col-span-2 text-right">
-                      {isAdmin && !isMe ? (
-                        <button
-                          onClick={() => handleRemove(member.id, member.user.name)}
-                          className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 p-1.5 rounded transition"
-                          title="Remove member"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
-                        </span>
-                      )}
-                    </div>
+                            <Trash2 className="h-3.5 w-3.5" /> Remove from workspace
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </div>
 
-      <InviteMemberModal 
-        open={inviteModalOpen} 
-        onClose={() => { setInviteModalOpen(false); fetchMembers(); }} 
+      <InviteMemberModal
+        open={inviteModalOpen}
+        onClose={() => { setInviteModalOpen(false); fetchMembers(); }}
       />
     </div>
   );

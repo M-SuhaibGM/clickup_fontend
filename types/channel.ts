@@ -4,6 +4,11 @@ export interface Channel {
   projectId: string;
 }
 
+export interface Reaction {
+  emoji: string;
+  userId: string;
+}
+
 export interface ChannelMessage {
   id: string;
   channelId: string;
@@ -11,4 +16,5 @@ export interface ChannelMessage {
   text: string;
   createdAt: string;
   sender?: { id: string; name: string; avatar: string | null };
+  reactions?: Reaction[];
 }

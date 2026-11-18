@@ -22,21 +22,24 @@ import {
   Loader2,
   Check,
   Ban,
+  GripVertical,
+  MoreHorizontal,
+  Trash2,
+  Link2,
+  ExternalLink,
+  GitFork,
 } from 'lucide-react';
 import { useTaskStore } from '@/store/taskStore';
 import { useUserStore } from '@/store/userStore';
 import { useAuthStore } from '@/store/authStore';
+import UserAvatar from './UserAvatar';
+import { toast } from 'sonner';
+import { STATUSES, gridTemplate, statusMeta, type ColumnKey } from '@/lib/taskColumns';
 
 const STATUS_ICONS: Record<string, any> = {
   TODO: Circle,
   IN_PROGRESS: CircleDashed,
   DONE: CheckCircle2,
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  TODO: 'TO DO',
-  IN_PROGRESS: 'IN PROGRESS',
-  DONE: 'COMPLETE',
 };
 
 const PRIORITIES = [
@@ -104,7 +107,24 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
-export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; onClick: () => void; allTasks?: Task[] }) {
+interface TaskRowProps {
+  task: Task;
+  /** opens the detail modal for a task (or one of its subtasks) */
+  onOpen: (task: Task) => void;
+  allTasks?: Task[];
+  columns: Record<ColumnKey, boolean>;
+  selected: boolean;
+  onToggleSelect: () => void;
+  showSubtasks: boolean;
+  isAdmin: boolean;
+}
+
+export default function TaskRow({ task, onOpen, allTasks = [], columns, selected, onToggleSelect, showSubtasks, isAdmin }: TaskRowProps) {
+  const onClick = () => onOpen(task);
+  const template = gridTemplate(columns);
+  const deleteTask = useTaskStore((s) => s.deleteTask);
+  const [showStatus, setShowStatus] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   const updateTask = useTaskStore((s) => s.updateTask);
   const createTask = useTaskStore((s) => s.createTask);
@@ -121,7 +141,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
   const [showAssignee, setShowAssignee] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
-  const dropdownPosRef = useRef({ top: 0, left: 0 });
+  // Where the open popup sits: attached to the edge of the icon that opened it
+  const [popPos, setPopPos] = useState<{ top?: number; bottom?: number; left: number; maxHeight: number }>({ left: 0, maxHeight: 300 });
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [prioritySearch, setPrioritySearch] = useState('');
 
@@ -146,23 +167,36 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
     setShowAssignee(false);
     setShowDatePicker(false);
     setShowPriority(false);
+    setShowStatus(false);
+    setShowMenu(false);
     setAssigneeSearch('');
     setPrioritySearch('');
   };
 
-  const openDropdown = (e: React.MouseEvent, which: 'assignee' | 'date' | 'priority') => {
+  const openDropdown = (e: React.MouseEvent, which: 'assignee' | 'date' | 'priority' | 'status' | 'menu') => {
     e.stopPropagation();
     e.preventDefault();
+    if (!isAdmin && (which === 'assignee' || which === 'date' || which === 'priority')) {
+      toast.error('Only admins can edit task details');
+      return;
+    }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const widths = { assignee: 280, date: 480, priority: 240 };
-    const heights = { assignee: 300, date: 360, priority: 280 };
+    const widths = { assignee: 280, date: 480, priority: 240, status: 200, menu: 200 };
+    const heights = { assignee: 300, date: 360, priority: 280, status: 140, menu: 220 };
     const w = widths[which];
     const h = heights[which];
-    const spaceBelow = window.innerHeight - rect.bottom;
-    dropdownPosRef.current = {
-      top: spaceBelow > h + 8 ? rect.bottom + 4 : Math.max(8, rect.top - h - 4),
-      left: Math.min(rect.left, window.innerWidth - w - 16),
-    };
+    // Open under the icon; flip above it only when there's clearly more room there. Either way the popup is
+    // anchored to the icon's edge (not to a guessed height) and scrolls if the window is too short.
+    const spaceBelow = window.innerHeight - rect.bottom - 12;
+    const spaceAbove = rect.top - 12;
+    const below = spaceBelow >= h || spaceBelow >= spaceAbove;
+    // the row menu hangs from the button's right edge, everything else from the left
+    const left = which === 'menu' ? rect.right - w : rect.left;
+    setPopPos({
+      ...(below ? { top: rect.bottom + 4 } : { bottom: window.innerHeight - rect.top + 4 }),
+      left: Math.max(8, Math.min(left, window.innerWidth - w - 8)),
+      maxHeight: Math.max(160, below ? spaceBelow : spaceAbove),
+    });
     closeAll();
     if (which === 'assignee') setShowAssignee(true);
     if (which === 'date') {
@@ -172,11 +206,13 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       setShowDatePicker(true);
     }
     if (which === 'priority') setShowPriority(true);
+    if (which === 'status') setShowStatus(true);
+    if (which === 'menu') setShowMenu(true);
   };
 
   const handleSaveTitle = async () => {
     if (taskTitle.trim() && taskTitle !== task.title) {
-      await updateTask(task.listId, task.id, { title: taskTitle.trim() });
+      await updateTask(task.id, task.listId, { title: taskTitle.trim() });
     }
     setIsEditing(false);
   };
@@ -200,6 +236,32 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
   const handleDateChange = async (date: Date | null) => {
     closeAll();
     await updateTask(task.id, task.listId, { dueDate: date ? date.toISOString() : null } as any);
+  };
+
+  const handleStatusChange = async (status: Task['status']) => {
+    closeAll();
+    if (status === task.status) return;
+    try {
+      await updateTask(task.id, task.listId, { status });
+    } catch { /* the store already toasts */ }
+  };
+
+  const toggleDone = () => handleStatusChange(task.status === 'DONE' ? 'TODO' : 'DONE');
+
+  const copyLink = async () => {
+    closeAll();
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/tasks/${task.id}`);
+      toast.success('Link copied');
+    } catch {
+      toast.error('Could not copy the link');
+    }
+  };
+
+  const handleDelete = async () => {
+    closeAll();
+    if (!confirm(`Delete "${task.title}"? Its subtasks will be removed too.`)) return;
+    try { await deleteTask(task.id, task.listId); } catch { /* the store already toasts */ }
   };
 
   const handlePriorityChange = async (priority: string) => {
@@ -239,25 +301,51 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
   const isSelectedDay = (day: number, cm: boolean) =>
     cm && selectedDate && day === selectedDate.getDate() && calMonth === selectedDate.getMonth() && calYear === selectedDate.getFullYear();
 
+  const showCol = (k: ColumnKey) => columns[k];
+  const subtasksVisible = showSubtasks && subtasksOpen;
+  const commentCount = task._count?.comments ?? task.comments?.length ?? 0;
+  const status = statusMeta(task.status);
+
   return (
     <>
       <div className="group/row">
         <div
           ref={setNodeRef}
-          style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+          style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, gridTemplateColumns: template }}
           {...attributes}
           {...listeners}
           onClick={onClick}
-          className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2.5 border-b border-[color:var(--c-333438)] hover:bg-[color:var(--c-2a2b2e)] transition-colors cursor-pointer items-center text-[13px] text-[color:var(--c-e5e5e5)]"
+          className={`relative grid gap-2 px-3 py-2 border-b border-[color:var(--c-2a2b2e)] transition-colors cursor-pointer items-center text-[13px] text-[color:var(--c-e5e5e5)] hover:bg-[color:var(--c-2a2b2e)] ${selected ? 'bg-indigo-500/10' : ''}`}
         >
-          {/* Name & Quick Hover Actions */}
-          <div className="flex items-center gap-2 truncate relative" onClick={(e) => e.stopPropagation()}>
-            {childSubtasks.length > 0 && (
-              <button onClick={() => setSubtasksOpen(!subtasksOpen)} className="text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">
-                {subtasksOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          <GripVertical className="absolute -left-0.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[color:var(--c-8a8c91)] opacity-0 group-hover/row:opacity-100 transition-opacity cursor-grab" />
+
+          {/* Select */}
+          <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              aria-label={`Select ${task.title}`}
+              className="h-3.5 w-3.5 rounded border-[color:var(--c-444548)] bg-transparent accent-indigo-500 cursor-pointer opacity-0 group-hover/row:opacity-100 checked:opacity-100 focus-visible:opacity-100 transition-opacity"
+            />
+          </div>
+
+          {/* Name & quick hover actions */}
+          <div className="flex items-center gap-2 min-w-0 relative">
+            {childSubtasks.length > 0 ? (
+              <button onClick={(e) => { e.stopPropagation(); setSubtasksOpen(!subtasksOpen); }} aria-label="Toggle subtasks" className="text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]">
+                {subtasksVisible ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
               </button>
+            ) : (
+              <span className="w-3.5 shrink-0" />
             )}
-            <Circle className="h-4 w-4 text-[color:var(--c-8a8c91)] shrink-0" />
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleDone(); }}
+              title={task.status === 'DONE' ? 'Mark as to do' : 'Mark as complete'}
+              className="shrink-0 hover:scale-110 transition-transform"
+            >
+              <StatusIcon className="h-4 w-4" style={{ color: status.color }} />
+            </button>
 
             {isEditing ? (
               <input
@@ -265,6 +353,7 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                 type="text"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
                 onBlur={handleSaveTitle}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveTitle();
@@ -273,84 +362,111 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
                 className="bg-[color:var(--c-1e1f21)] border border-indigo-500 rounded px-1.5 py-0.5 text-[color:var(--c-white)] text-[13px] outline-none w-full"
               />
             ) : (
-              <span className="truncate flex-1" onDoubleClick={() => setIsEditing(true)}>{task.title}</span>
-            )}
-
-            {childSubtasks.length > 0 && (
-              <span className="flex items-center gap-0.5 text-[10px] text-[color:var(--c-8a8c91)] bg-[color:var(--c-232426)] px-1.5 py-0.5 rounded border border-[color:var(--c-333438)]">
-                ↳ {childSubtasks.length}
+              <span
+                className={`truncate ${task.status === 'DONE' ? 'text-[color:var(--c-8a8c91)] line-through' : ''}`}
+              >
+                {task.title}
               </span>
             )}
 
-            <div className="opacity-0 group-hover/row:opacity-100 flex items-center gap-1 bg-[color:var(--c-2a2b2e)] px-1 rounded transition-opacity shrink-0 ml-auto">
-              <button
-                title="Add Subtask"
-                onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(!showSubtaskInput); setSubtasksOpen(true); }}
-                className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-              <button
-                title="Rename task"
-                onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                className="p-1 hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
+            {childSubtasks.length > 0 && (
+              <span title={`${childSubtasks.length} subtask${childSubtasks.length === 1 ? '' : 's'}`} className="flex shrink-0 items-center gap-0.5 text-[11px] text-[color:var(--c-8a8c91)]">
+                <GitFork className="h-3 w-3" /> {childSubtasks.length}
+              </span>
+            )}
 
-          {/* Assignee */}
-          <div
-            className="flex items-center cursor-pointer"
-            onClick={(e) => openDropdown(e, 'assignee')}
-          >
-            {task.assignee ? (
-              <Image src={task.assignee.avatar || ''} alt="A" width={24} height={24} className="rounded-full border border-[color:var(--c-333438)] hover:border-indigo-500 transition" />
-            ) : (
-              <div className="h-6 w-6 rounded-full bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] flex items-center justify-center hover:border-indigo-500 transition">
-                <UserCircle className="h-4 w-4 text-[color:var(--c-8a8c91)]" />
+            {isAdmin && (
+              <div className="opacity-0 group-hover/row:opacity-100 flex items-center gap-0.5 shrink-0 transition-opacity">
+                <button
+                  title="Add subtask"
+                  onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(!showSubtaskInput); setSubtasksOpen(true); }}
+                  className="p-1 border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  title="Rename task"
+                  onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                  className="p-1 border border-[color:var(--c-333438)] bg-[color:var(--c-232426)] hover:bg-[color:var(--c-333438)] rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)]"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
               </div>
             )}
           </div>
 
-          {/* Due Date */}
-          <div
-            className="text-[12px] text-[color:var(--c-8a8c91)] cursor-pointer hover:text-[color:var(--c-white)] transition"
-            onClick={(e) => openDropdown(e, 'date')}
-          >
-            {due ? (
-              <span className="hover:text-indigo-400 transition">{due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-            ) : (
-              <CalendarIcon className="h-4 w-4 text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition" />
-            )}
-          </div>
+          {/* Assignee */}
+          {showCol('assignee') && (
+            <div className="flex items-center cursor-pointer" onClick={(e) => openDropdown(e, 'assignee')}>
+              {task.assignee ? (
+                <span title={task.assignee.name}><UserAvatar name={task.assignee.name} src={task.assignee.avatar} size={24} /></span>
+              ) : (
+                <div className="h-6 w-6 rounded-full border border-dashed border-[color:var(--c-444548)] flex items-center justify-center hover:border-indigo-500 transition">
+                  <UserCircle className="h-4 w-4 text-[color:var(--c-8a8c91)]" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Due date */}
+          {showCol('dueDate') && (
+            <div
+              className="text-[12px] text-[color:var(--c-8a8c91)] cursor-pointer hover:text-[color:var(--c-white)] transition"
+              onClick={(e) => openDropdown(e, 'date')}
+            >
+              {due ? (
+                <span className={`transition ${task.status !== 'DONE' && due.getTime() < todayStart() ? 'text-red-400' : 'hover:text-indigo-400'}`}>
+                  {due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              ) : (
+                <CalendarIcon className="h-4 w-4" />
+              )}
+            </div>
+          )}
 
           {/* Priority */}
-          <div onClick={(e) => openDropdown(e, 'priority')} className="cursor-pointer">
-            <span className="flex items-center gap-1 text-[12px] text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition">
-              <Flag className="h-3.5 w-3.5" style={{ color: priorityColor }} /> {task.priority || 'Normal'}
-            </span>
-          </div>
+          {showCol('priority') && (
+            <div onClick={(e) => openDropdown(e, 'priority')} className="cursor-pointer">
+              <span className="flex items-center gap-1.5 text-[12px] text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] transition capitalize">
+                <Flag className="h-3.5 w-3.5" style={{ color: priorityColor }} fill={task.priority && task.priority !== 'NORMAL' ? priorityColor : 'none'} />
+                {task.priority && task.priority !== 'NORMAL' ? task.priority.toLowerCase() : ''}
+              </span>
+            </div>
+          )}
 
-          {/* Status Pill */}
-          <div>
-            <span className="flex items-center justify-center gap-1.5 px-2 py-0.5 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-[11px] font-bold text-[color:var(--c-e5e5e5)] w-max">
-              <StatusIcon className="h-3.5 w-3.5" /> {STATUS_LABEL[task.status]}
-            </span>
-          </div>
+          {/* Status pill */}
+          {showCol('status') && (
+            <div onClick={(e) => openDropdown(e, 'status')} className="cursor-pointer">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-[11px] font-bold text-[color:var(--c-e5e5e5)] w-max hover:border-[color:var(--c-444548)] transition">
+                <StatusIcon className="h-3.5 w-3.5" style={{ color: status.color }} /> {status.label}
+              </span>
+            </div>
+          )}
 
           {/* Comments */}
-          <div className="flex justify-center">
-            <MessageSquare className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] group-hover/row:opacity-100 opacity-60" />
+          {showCol('comments') && (
+            <div className="flex items-center gap-1 text-[12px] text-[color:var(--c-8a8c91)]">
+              <MessageSquare className={`h-3.5 w-3.5 ${commentCount ? '' : 'opacity-60'}`} />
+              {commentCount > 0 && <span>{commentCount}</span>}
+            </div>
+          )}
+
+          {/* Row menu */}
+          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={(e) => openDropdown(e, 'menu')}
+              aria-label="Task actions"
+              className="p-1 rounded text-[color:var(--c-8a8c91)] hover:text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] opacity-0 group-hover/row:opacity-100 transition"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
         {showSubtaskInput && (
-          <div className="pl-10 pr-3 py-2 bg-[color:var(--c-232426)]/80 border-b border-[color:var(--c-333438)] flex items-center gap-2">
+          <div className="pl-12 pr-3 py-2 bg-[color:var(--c-232426)]/80 border-b border-[color:var(--c-2a2b2e)] flex items-center gap-2">
             <span className="text-[11px] text-indigo-400 font-semibold">+ Subtask:</span>
             <input
-              ref={inputRef}
               autoFocus
               type="text"
               value={subtaskTitle}
@@ -376,22 +492,59 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
         )}
       </div>
 
-      {subtasksOpen && childSubtasks.map((sub) => (
-        <div key={sub.id} onClick={() => onClick()} className="grid grid-cols-[1fr_120px_120px_150px_100px_40px] gap-2 px-3 py-2 pl-8 border-b border-[color:var(--c-333438)]/50 bg-[color:var(--c-232426)] hover:bg-[color:var(--c-2a2b2e)] transition-colors cursor-pointer items-center text-[12px] text-[color:var(--c-c4c5c8)]">
-          <div className="flex items-center gap-2 truncate">
-            <span className="text-indigo-400 font-mono text-[10px]">└─</span>
-            <Circle className="h-3.5 w-3.5 text-[color:var(--c-8a8c91)] shrink-0" />
-            <span className="truncate">{sub.title}</span>
-          </div>
-          <div className="text-xs text-[color:var(--c-8a8c91)]">-</div>
-          <div className="text-xs text-[color:var(--c-8a8c91)]">-</div>
-          <div className="text-xs text-[color:var(--c-8a8c91)]">{sub.priority}</div>
-          <div>
-            <span className="px-1.5 py-0.5 bg-[color:var(--c-2a2b2e)] rounded text-[10px] text-[color:var(--c-white)]">{sub.status}</span>
-          </div>
-          <div></div>
-        </div>
+      {subtasksVisible && childSubtasks.map((sub) => (
+        <SubtaskRow key={sub.id} sub={sub} template={template} columns={columns} onOpen={() => onOpen(sub)} />
       ))}
+
+      {/* Status Dropdown */}
+      {showStatus && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
+          <div
+            className="fixed w-[200px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-y-auto py-1"
+            style={popPos}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#555]">Status</div>
+            {STATUSES.map((st) => {
+              const Icon = STATUS_ICONS[st.value];
+              return (
+                <button
+                  key={st.value}
+                  onClick={() => handleStatusChange(st.value)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[color:var(--c-white)] hover:bg-[color:var(--c-333438)] transition"
+                >
+                  <Icon className="h-3.5 w-3.5" style={{ color: st.color }} />
+                  <span className="flex-1 text-left font-semibold">{st.label}</span>
+                  {task.status === st.value && <Check className="h-3.5 w-3.5 text-indigo-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Row menu */}
+      {showMenu && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
+          <div
+            className="fixed w-[200px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-y-auto py-1"
+            style={popPos}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MenuItem icon={ExternalLink} label="Open task" onClick={() => { closeAll(); onClick(); }} />
+            {isAdmin && <MenuItem icon={Pencil} label="Rename" onClick={() => { closeAll(); setIsEditing(true); }} />}
+            {isAdmin && <MenuItem icon={Plus} label="Add subtask" onClick={() => { closeAll(); setShowSubtaskInput(true); setSubtasksOpen(true); }} />}
+            <MenuItem icon={Link2} label="Copy link" onClick={copyLink} />
+            {isAdmin && (
+              <div className="mt-1 border-t border-[color:var(--c-333438)] pt-1">
+                <MenuItem icon={Trash2} label="Delete" danger onClick={handleDelete} />
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ── Portal Dropdowns ── */}
 
@@ -399,8 +552,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showAssignee && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="fixed w-[280px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-hidden"
-            style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
+            className="fixed w-[280px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-y-auto"
+            style={popPos}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[color:var(--c-333438)]">
@@ -478,8 +631,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showDatePicker && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="fixed w-[480px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-hidden"
-            style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
+            className="fixed w-[480px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-y-auto"
+            style={popPos}
             onClick={e => e.stopPropagation()}
           >
             {/* Start / Due tabs */}
@@ -575,8 +728,8 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
       {showPriority && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999]" onClick={closeAll}>
           <div
-            className="fixed w-[240px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-hidden"
-            style={{ top: dropdownPosRef.current.top, left: dropdownPosRef.current.left }}
+            className="fixed w-[240px] bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded-lg shadow-2xl overflow-y-auto"
+            style={popPos}
             onClick={e => e.stopPropagation()}
           >
             <div className="px-3 py-2.5 border-b border-[color:var(--c-333438)]">
@@ -617,5 +770,66 @@ export default function TaskRow({ task, onClick, allTasks = [] }: { task: Task; 
         document.body
       )}
     </>
+  );
+}
+
+
+const todayStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+
+function MenuItem({ icon: Icon, label, onClick, danger }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-[color:var(--c-333438)] transition ${danger ? 'text-red-400' : 'text-[color:var(--c-white)]'}`}
+    >
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </button>
+  );
+}
+
+/** A subtask: read-only cells in the same columns as its parent. */
+function SubtaskRow({ sub, template, columns, onOpen }: { sub: Task; template: string; columns: Record<ColumnKey, boolean>; onOpen: () => void }) {
+  const Icon = STATUS_ICONS[sub.status] || Circle;
+  const st = statusMeta(sub.status);
+  const prio = PRIORITIES.find((p) => p.value === sub.priority);
+  const due = sub.dueDate ? new Date(sub.dueDate) : null;
+  const count = sub._count?.comments ?? 0;
+  return (
+    <div
+      onClick={onOpen}
+      style={{ gridTemplateColumns: template }}
+      className="grid gap-2 px-3 py-2 border-b border-[color:var(--c-2a2b2e)] bg-[color:var(--c-232426)]/60 hover:bg-[color:var(--c-2a2b2e)] transition-colors cursor-pointer items-center text-[13px] text-[color:var(--c-e5e5e5)]"
+    >
+      <span />
+      <div className="flex items-center gap-2 min-w-0 pl-9">
+        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: st.color }} />
+        <span className={`truncate ${sub.status === 'DONE' ? 'text-[color:var(--c-8a8c91)] line-through' : ''}`}>{sub.title}</span>
+      </div>
+      {columns.assignee && (
+        <div>{sub.assignee ? <UserAvatar name={sub.assignee.name} src={sub.assignee.avatar} size={22} /> : <span className="text-[color:var(--c-8a8c91)]">–</span>}</div>
+      )}
+      {columns.dueDate && (
+        <div className="text-[12px] text-[color:var(--c-8a8c91)]">{due ? due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '–'}</div>
+      )}
+      {columns.priority && (
+        <div className="flex items-center gap-1.5 text-[12px] text-[color:var(--c-8a8c91)] capitalize">
+          <Flag className="h-3.5 w-3.5" style={{ color: prio?.color }} />
+          {sub.priority && sub.priority !== 'NORMAL' ? sub.priority.toLowerCase() : ''}
+        </div>
+      )}
+      {columns.status && (
+        <div>
+          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[color:var(--c-2a2b2e)] border border-[color:var(--c-333438)] rounded text-[11px] font-bold w-max">
+            <Icon className="h-3 w-3" style={{ color: st.color }} /> {st.label}
+          </span>
+        </div>
+      )}
+      {columns.comments && (
+        <div className="flex items-center gap-1 text-[12px] text-[color:var(--c-8a8c91)]">
+          <MessageSquare className="h-3.5 w-3.5 opacity-60" />{count > 0 && count}
+        </div>
+      )}
+      <span />
+    </div>
   );
 }

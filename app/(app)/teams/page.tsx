@@ -2,6 +2,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { 
   Plus, 
   Users, 
@@ -14,10 +17,24 @@ import {
   Circle,
   CheckCircle2
 } from 'lucide-react';
-import NewTeamModal from '@/components/NewTeamModal'; // We will create this next
+import { lazyOnOpen } from '@/components/LazyMount';
+
+import SpaceIcon from '@/components/SpaceIcon';
+import { useTeamStore } from '@/store/teamStore';
+import { useWorkspaceStore } from '@/store/workspaceStore';
+
+const NewTeamModal = lazyOnOpen(() => import('@/components/NewTeamModal'));
 
 export default function TeamsPage() {
-  const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
+  const teams = useTeamStore((s) => s.teams);
+  const isAdmin = useWorkspaceStore((s) => s.activeWorkspace?.role === 'ADMIN');
+
+  const setTeamModalOpen = (open: boolean) => {
+    if (open && !isAdmin) return toast.error('Only workspace admins can create teams');
+    setModalOpen(open);
+  };
 
   return (
     <div className="min-h-screen bg-(--c-121212) text-(--c-white) overflow-hidden relative">
@@ -85,7 +102,7 @@ export default function TeamsPage() {
                    <div className="w-24 bg-(--c-333438) text-[10px] px-2 py-1.5 rounded text-(--c-white) truncate">4.0 Designs</div>
                    <div className="h-6 w-48 bg-blue-900/40 border border-blue-500/30 rounded text-[10px] flex items-center px-2 text-blue-200">
                       <Circle className="h-2 w-2 mr-1 fill-current" /> Todo page
-                   </div>er:b
+                   </div>
                  </div>
                  
                  {/* Row 2 */}
@@ -132,22 +149,29 @@ export default function TeamsPage() {
            </div>
          </div>
 
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Empty State / Placeholder Cards */}
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-(--c-1e1f21) border border-[color:var(--c-333438)] rounded-xl p-5 hover:border-[color:var(--c-444548)] transition cursor-pointer group">
-                <div className="h-10 w-10 rounded-lg bg-(--c-2a2b2e) border border-[color:var(--c-333438)] flex items-center justify-center mb-4 group-hover:scale-105 transition">
-                  <Users className="h-5 w-5 text-[color:var(--c-8a8c91)]" />
-                </div>
-                <div className="h-4 w-32 bg-[color:var(--c-2a2b2e)] rounded mb-2" />
-                <div className="h-3 w-48 bg-[color:var(--c-2a2b2e)] rounded" />
-              </div>
-            ))}
-         </div>
+         {teams.length === 0 ? (
+           <p className="text-sm text-(--c-8a8c91) pb-8">No teams yet. Create your first team to get started.</p>
+         ) : (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
+             {teams.map((team) => (
+               <Link
+                 key={team.id}
+                 href={`/teams/${team.id}`}
+                 className="bg-(--c-1e1f21) border border-[color:var(--c-333438)] rounded-xl p-5 hover:border-[color:var(--c-444548)] transition group"
+               >
+                 <SpaceIcon name={team.name} icon={team.icon} color={team.color} size={40} className="rounded-lg mb-4 group-hover:scale-105 transition" />
+                 <p className="text-[15px] font-semibold text-(--c-white) truncate">{team.name}</p>
+                 <p className="text-[13px] text-(--c-8a8c91) mt-1">
+                   {team.members.length} member{team.members.length === 1 ? '' : 's'}
+                 </p>
+               </Link>
+             ))}
+           </div>
+         )}
       </div>
 
       {/* Render New Team Modal */}
-      <NewTeamModal open={teamModalOpen} onClose={() => setTeamModalOpen(false)} />
+      <NewTeamModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={(t) => router.push(`/teams/${t.id}`)} />
     </div>
   );
 }
